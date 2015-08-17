@@ -217,12 +217,6 @@ typedef enum
 	SOLENOID_PWM
 } SolenoidStateType;
 
-static void process_SM(
-	UINT32 Duration,
-	INT32 A1Stp,
-	INT32 A2Stp
-);
-
 typedef enum
 {
 	PIC_CONTROLS_DRIVERS = 0,
@@ -243,8 +237,6 @@ static unsigned char AllDone;
 static unsigned char i;
 MoveCommandType CommandFIFO[COMMAND_FIFO_LENGTH];
 
-unsigned int DemoModeActive;
-unsigned int comd_counter;
 static SolenoidStateType SolenoidState;
 static unsigned int SolenoidDelay;
 static DriverConfigurationType DriverConfiguration;
@@ -254,8 +246,8 @@ static PenStateType PenState;
 
 static unsigned long NodeCount;
 static char Layer;
-static BOOL ButtonPushed;
-static BOOL UseAltPause;
+BOOL ButtonPushed;
+BOOL UseAltPause;
 unsigned char QC_ms_timer;
 static UINT StoredEngraverPower;
 // Set TRUE to enable solenoid output for pen up/down
@@ -948,7 +940,7 @@ void parse_SM_packet (void)
 //
 // In the future, making the FIFO more elements deep may be cool.
 // 
-static void process_SM(
+void process_SM(
 	UINT32 Duration,
 	INT32 A1Stp,
 	INT32 A2Stp
@@ -1202,7 +1194,7 @@ void parse_SP_packet(void)
 	print_ack();
 }
 
-// Interal use function -
+// Internal use function -
 // Perform a state change on the pen RC servo output. Move it up or move it down
 // <NewState> is either PEN_UP or PEN_DOWN.
 // <CommandDuration> is the number of milliseconds to wait before executing the

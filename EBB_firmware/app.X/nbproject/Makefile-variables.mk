@@ -39,3 +39,10 @@ CND_ARTIFACT_PATH_EBBv13_45J50_with_bootloader=dist/EBBv13_45J50_with_bootloader
 CND_PACKAGE_DIR_EBBv13_45J50_with_bootloader=${CND_DISTDIR}/EBBv13_45J50_with_bootloader/package
 CND_PACKAGE_NAME_EBBv13_45J50_with_bootloader=app.x.tar
 CND_PACKAGE_PATH_EBBv13_45J50_with_bootloader=${CND_DISTDIR}/EBBv13_45J50_with_bootloader/package/app.x.tar
+# EBBv13_wBL_demo configuration
+CND_ARTIFACT_DIR_EBBv13_wBL_demo=dist/EBBv13_wBL_demo/production
+CND_ARTIFACT_NAME_EBBv13_wBL_demo=app.X.production.hex
+CND_ARTIFACT_PATH_EBBv13_wBL_demo=dist/EBBv13_wBL_demo/production/app.X.production.hex
+CND_PACKAGE_DIR_EBBv13_wBL_demo=${CND_DISTDIR}/EBBv13_wBL_demo/package
+CND_PACKAGE_NAME_EBBv13_wBL_demo=app.x.tar
+CND_PACKAGE_PATH_EBBv13_wBL_demo=${CND_DISTDIR}/EBBv13_wBL_demo/package/app.x.tar

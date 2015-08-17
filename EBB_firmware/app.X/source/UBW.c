@@ -93,7 +93,9 @@
 #if defined(BOARD_EBB_V11) || defined(BOARD_EBB_V12) || defined(BOARD_EBB_V13_AND_ABOVE)
 	#include "RCServo2.h"
 #endif
-
+#if defined(BUILD_WITH_DEMO)
+    #include "ebb_demo.h"
+#endif
 /** D E F I N E S ********************************************************/
 
 #define kUSART_TX_BUF_SIZE		10				// In bytes
@@ -110,35 +112,6 @@
 /** V A R I A B L E S ********************************************************/
 #pragma udata access fast_vars
 
-// Rate variable - how fast does interrupt fire to capture inputs?
-near unsigned int time_between_updates;
-
-near volatile unsigned int ISR_D_RepeatRate;			// How many 1ms ticks between Digital updates
-near volatile unsigned char ISR_D_FIFO_in;				// In pointer
-near volatile unsigned char ISR_D_FIFO_out;				// Out pointer
-near volatile unsigned char ISR_D_FIFO_length;			// Current FIFO depth
-
-near volatile unsigned int ISR_A_RepeatRate;			// How many 1ms ticks between Analog updates
-near volatile unsigned char ISR_A_FIFO_in;				// In pointer
-near volatile unsigned char ISR_A_FIFO_out;				// Out pointer
-near volatile unsigned char ISR_A_FIFO_length;			// Current FIFO depth
-
-// This byte has each of its bits used as a seperate error flag
-near unsigned char error_byte;
-
-// RC servo variables
-// First the main array of data for each servo
-near unsigned char g_RC_primed_ptr;
-near unsigned char g_RC_next_ptr;
-near unsigned char g_RC_timing_ptr;
-
-// Used only in LowISR
-near unsigned int D_tick_counter;
-near unsigned int A_tick_counter;
-near unsigned char A_cur_channel;
-near unsigned char AnalogInitiate;
-near volatile unsigned int AnalogEnabledChannels;
-near volatile unsigned int ChannelBit;
 
 // ROM strings
 const rom char st_OK[] = {"OK\r\n"};
@@ -175,6 +148,38 @@ unsigned char g_RX_buf[kRX_BUF_SIZE];
 
 // These variables are in normal storage space
 #pragma udata
+
+// Used only in LowISR
+unsigned int D_tick_counter;
+unsigned int A_tick_counter;
+unsigned char A_cur_channel;
+unsigned char AnalogInitiate;
+volatile unsigned int AnalogEnabledChannels;
+volatile unsigned int ChannelBit;
+
+// Rate variable - how fast does interrupt fire to capture inputs?
+unsigned int time_between_updates;
+
+volatile unsigned int ISR_D_RepeatRate;			// How many 1ms ticks between Digital updates
+volatile unsigned char ISR_D_FIFO_in;				// In pointer
+volatile unsigned char ISR_D_FIFO_out;				// Out pointer
+volatile unsigned char ISR_D_FIFO_length;			// Current FIFO depth
+
+volatile unsigned int ISR_A_RepeatRate;			// How many 1ms ticks between Analog updates
+volatile unsigned char ISR_A_FIFO_in;				// In pointer
+volatile unsigned char ISR_A_FIFO_out;				// Out pointer
+volatile unsigned char ISR_A_FIFO_length;			// Current FIFO depth
+
+
+// RC servo variables
+// First the main array of data for each servo
+unsigned char g_RC_primed_ptr;
+unsigned char g_RC_next_ptr;
+unsigned char g_RC_timing_ptr;
+
+// This byte has each of its bits used as a separate error flag
+unsigned char error_byte;
+
 
 // USART Receiving buffer for data coming from the USART
 unsigned char g_USART_RX_buf[kUSART_RX_BUF_SIZE];
@@ -792,22 +797,16 @@ void ProcessIO(void)
 
 #if defined(BUILD_WITH_DEMO)    
     /* Demo code, for playing back array of points so we can run without PC.*/
+    HandleDemoMode();
+#endif
     
-    // Check for start of playback
-    if (!swProgram)
-    {
-        
-        
-    }
-
-#endif    
 	// Check for any new I packets (from T command) ready to go out
 	while (ISR_D_FIFO_length > 0)
 	{
 		// Spit out an I packet first
 		parse_I_packet ();
 
-		// Then upate our I packet fifo stuff
+		// Then update our I packet fifo stuff
 		ISR_D_FIFO_out++;
 		if (ISR_D_FIFO_out == kISR_FIFO_D_DEPTH)
 		{

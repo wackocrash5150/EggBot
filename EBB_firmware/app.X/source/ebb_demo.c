@@ -1,5 +1,72 @@
-//#include "system\typedefs.h"
 #include "ebb_demo.h"
+#include "ebb.h"
+#include "HardwareProfile.h"
+
+
+
+BOOL DemoModeActive = FALSE;
+UINT16  DemoModeCounter = 0;
+
+void HandleDemoMode(void) {
+    if (
+        (!swProgram)
+		||
+		(
+			UseAltPause
+			&&
+			!PORTBbits.RB0
+		)
+    ) {
+        // Wait until button is released
+        while (
+            (!swProgram)
+			||
+			(
+				UseAltPause
+				&&
+				!PORTBbits.RB0
+            )
+        );
+
+        if (!DemoModeActive) {
+            // A button push with demo mode not active will turn it on and start plotting
+            DemoModeActive = TRUE;
+            // Reset our counter back at the beginning
+            DemoModeCounter = 0;
+            printf((far rom char *)"Demo mode activated. Plotting . . . \n\r");
+        }
+        else {
+            // A button push with demo mode active will stop plotting
+            DemoModeActive = FALSE;
+            // Relax the motors
+            Enable1IO = DISABLE_MOTOR;
+            Enable2IO = DISABLE_MOTOR;
+            printf((far rom char *)"Demo mode stopped.\n\r");
+        }
+    }
+
+    if (DemoModeActive) {
+        // Every time the FIFO is empty, send the next stored command
+        if(FIFOEmpty) {
+            if (packet_list[DemoModeCounter].comd == COMD_SM) {
+                process_SM(packet_list[DemoModeCounter].duration, packet_list[DemoModeCounter].A1steps, packet_list[DemoModeCounter].A2steps);
+                DemoModeCounter++;
+            }
+            else if (packet_list[DemoModeCounter].comd == COMD_SP) {
+                process_SP(packet_list[DemoModeCounter].duration, 0);
+                DemoModeCounter++;
+            }
+            else {
+                // Any other command means we're done
+                DemoModeActive = FALSE;
+                // Relax the motors
+                Enable1IO = DISABLE_MOTOR;
+                Enable2IO = DISABLE_MOTOR;
+                printf((far rom char *)"Demo mode plot finished.\n\r");
+            }  
+        }
+    }
+}
 
 packet_type far rom packet_list[] = 
 {

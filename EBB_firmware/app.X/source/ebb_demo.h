@@ -17,6 +17,9 @@ typedef struct {
 	signed int A2steps;
 } packet_type;
 
+extern BOOL DemoModeActive;
+
 extern packet_type far rom packet_list[];
+extern void HandleDemoMode(void);
 
 #endif
