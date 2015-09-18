@@ -80,10 +80,10 @@
 
 /** I N C L U D E S **********************************************************/
 #include <p18cxxx.h>
-#include <usart.h>
+//#include <usart.h>
 #include <stdio.h>
 #include <ctype.h>
-#include <delays.h>
+//#include <delays.h>
 #include "Usb\usb.h"
 #include "Usb\usb_function_cdc.h"
 #include "usb_config.h"

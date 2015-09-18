@@ -185,18 +185,19 @@
 //                  second)
 //
 
-#include <p18cxxx.h>
-#include <usart.h>
+//#include <p18cxxx.h>
+#include <xc.h>
+//#include <usart.h>
 #include <stdio.h>
 #include <ctype.h>
-#include <delays.h>
+//#include <delays.h>
 #include "Usb\usb.h"
 #include "Usb\usb_function_cdc.h"
 #include "usb_config.h"
 #include "HardwareProfile.h"
 #include "ubw.h"
 #include "ebb.h"
-#include "delays.h"
+//#include "delays.h"
 #include "ebb_demo.h"
 #include "RCServo2.h"
 
@@ -224,13 +225,13 @@ typedef enum
     EXTERNAL_CONTROLS_DRIVERS
 } DriverConfigurationType;
 
-#pragma udata access fast_vars
+//#pragma udata access fast_vars
 // Working registers
 static near MoveCommandType CurrentCommand;
 static near unsigned int StepAcc[NUMBER_OF_STEPPERS];
 near BOOL FIFOEmpty;
 
-#pragma udata
+//#pragma udata
 static unsigned char OutByte;
 static unsigned char TookStep;
 static unsigned char AllDone;
@@ -256,8 +257,7 @@ BOOL gUseSolenoid;
 BOOL gUseRCPenServo;
 
 // ISR
-#pragma interrupt high_ISR
-void high_ISR(void)
+void interrupt high_ISR(void)
 {
 	//Check which interrupt flag caused the interrupt.
 	//Service the interrupt
@@ -398,33 +398,33 @@ void high_ISR(void)
 							Step2AltIO = 1;
 						}
 					}
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
+					NOP();
 					if (DriverConfiguration == PIC_CONTROLS_DRIVERS)
 					{
 						Step1IO = 0;
@@ -618,25 +618,25 @@ void EBB_Init(void)
     #if defined(USE_USB_BUS_SENSE_IO)
 	    tris_usb_bus_sense = OUTPUT_PIN; // See HardwareProfile.h
     	USB_BUS_SENSE = 1;
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
+		NOP();
+		NOP();
+		NOP();
+		NOP();
+		NOP();
+		NOP();
+		NOP();
+		NOP();
+		NOP();
+		NOP();
+		NOP();
+		NOP();
+		NOP();
+		NOP();
+		NOP();
+		NOP();
+		NOP();
+		NOP();
+		NOP();
 		tris_usb_bus_sense = INPUT_PIN;
 		USB_BUS_SENSE = 0;
 	#endif

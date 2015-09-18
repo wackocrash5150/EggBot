@@ -64,7 +64,7 @@ extern UINT8 gRC2RPn[MAX_RC2_SERVOS];
 extern UINT8 gRC2Ptr;
 extern UINT16 gRC2Target[MAX_RC2_SERVOS];
 extern UINT16 gRC2Rate[MAX_RC2_SERVOS];
-extern far ram UINT8 * gRC2RPORPtr;
+extern UINT8 * gRC2RPORPtr;
 extern UINT16 g_servo2_max;
 extern UINT16 g_servo2_min;
 extern UINT8 gRC2Slots;

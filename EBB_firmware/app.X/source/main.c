@@ -86,7 +86,6 @@
 #include "UBW.h"
 
 /** V A R I A B L E S ********************************************************/
-#pragma udata
 
 /** P R I V A T E  P R O T O T Y P E S ***************************************/
 static void InitializeSystem(void);

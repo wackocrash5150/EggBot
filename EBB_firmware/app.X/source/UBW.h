@@ -135,7 +135,7 @@ extern volatile tRC_state g_RC_state[kRC_DATA_SIZE];
 void UserInit(void);
 void ProcessIO(void);
 void low_ISR(void);
-void high_ISR(void);
+void interrupt high_ISR(void);
 ExtractReturnType extract_number(ExtractType Type, void * ReturnValue, unsigned char Required);
 void print_ack (void);
 void SetPinTRISFromRPn(char Pin, char State);
