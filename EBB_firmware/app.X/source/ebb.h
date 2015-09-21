@@ -110,6 +110,8 @@ extern unsigned int DemoModeActive;
 extern near BOOL FIFOEmpty;
 extern unsigned int comd_counter;
 extern unsigned char QC_ms_timer;
+extern UINT16 PRG_ms_timer;
+extern UINT16 USR_LED_ms_timer;
 // Default to on, comes out on pin RB4 for EBB v1.3 and above
 extern BOOL gUseSolenoid;
 void parse_SM_packet(void);
@@ -133,4 +135,6 @@ void parse_ES_packet(void);
 void parse_XM_packet(void);
 void EBB_Init(void);
 void process_SP(PenStateType NewState, UINT16 CommandDuration);
+void process_SM(UINT32 Duration,INT32 A1Stp,INT32 A2Stp);
+
 #endif

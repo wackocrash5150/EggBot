@@ -93,6 +93,7 @@
 #if defined(BOARD_EBB_V11) || defined(BOARD_EBB_V12) || defined(BOARD_EBB_V13_AND_ABOVE)
 	#include "RCServo2.h"
 #endif
+#include "ebb_demo.h"
 
 /** D E F I N E S ********************************************************/
 
@@ -152,7 +153,7 @@ const rom char st_LFCR[] = {"\r\n"};
 #elif defined(BOARD_EBB_V12)
 	const rom char st_version[] = {"EBBv12 EB Firmware Version 2.2.1\r\n"};
 #elif defined(BOARD_EBB_V13_AND_ABOVE)
-	const rom char st_version[] = {"EBBv13_and_above EB Firmware Version 2.3.0\r\n"};
+	const rom char st_version[] = {"EBBv13_and_above EB Firmware Version 2.3.0_demo\r\n"};
 #elif defined(BOARD_UBW)
 	const rom char st_version[] = {"UBW EB Firmware Version 2.2.1\r\n"};
 #endif
@@ -508,7 +509,19 @@ void low_ISR(void)
 		if (QC_ms_timer)
 		{
 			QC_ms_timer--;
-		}	
+		}
+        
+        // Software timer for PRG Button hold down timing
+        if (PRG_ms_timer < 0xFFFF)
+        {
+            PRG_ms_timer++;
+        }
+        
+        // Software timer for USR led flashing while playback/recording
+        if (USR_LED_ms_timer)
+        {
+            USR_LED_ms_timer--;
+        }
 
 	} // end of 1ms interrupt
 
@@ -746,6 +759,11 @@ void UserInit(void)
 
 	// Turn on the Timer4
 	T4CONbits.TMR4ON = 1; 
+    
+#if defined(BUILD_WITH_DEMO)   
+    demo_init();
+#endif
+    
 }//end UserInit
 
 /******************************************************************************
@@ -792,14 +810,7 @@ void ProcessIO(void)
 
 #if defined(BUILD_WITH_DEMO)    
     /* Demo code, for playing back array of points so we can run without PC.*/
-    
-    // Check for start of playback
-    if (!swProgram)
-    {
-        
-        
-    }
-
+    demo_run();
 #endif    
 	// Check for any new I packets (from T command) ready to go out
 	while (ISR_D_FIFO_length > 0)
@@ -807,7 +818,7 @@ void ProcessIO(void)
 		// Spit out an I packet first
 		parse_I_packet ();
 
-		// Then upate our I packet fifo stuff
+		// Then update our I packet fifo stuff
 		ISR_D_FIFO_out++;
 		if (ISR_D_FIFO_out == kISR_FIFO_D_DEPTH)
 		{
@@ -3168,7 +3179,7 @@ void print_status(void)
  *
  * Side Effects:    None
  *
- * Overview:        BlinkUSBStatus turns on and off LEDs corresponding to
+ * Overview:        BlinkUSBStatus turns on and off LED_1 corresponding to
  *                  the USB device state.
  *
  * Note:            mLED macros can be found in io_cfg.h

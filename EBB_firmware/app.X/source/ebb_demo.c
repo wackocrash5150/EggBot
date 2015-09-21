@@ -1,2074 +1,665 @@
-//#include "system\typedefs.h"
 #include "ebb_demo.h"
+#include "flash.h"
+#include "HardwareProfile.h"
+#include "ebb.h"
 
-packet_type far rom packet_list[] = 
+/* Path format in Flash. 
+ * Each command consists of a command byte, followed by zero to four data
+ * bytes depending upon the command.
+ * 
+ * End
+ *   Command Byte = 0xFF
+ *   Data bytes : none
+ *   This command indicates that the path is complete and playback can stop.
+ *
+ * Pen Up
+ *   Command Byte = 0xFE
+ *   Data bytes : none
+ *   This command simply raises the pen
+ * 
+ * Pen Down
+ *   Command Byte = 0xFD
+ *   Data bytes : none
+ *   This command simply lowers the pen
+ * 
+ * Short Delay
+ *   Command Byte = 0xFC
+ *   Data byte 0 : Delay in milliseconds (from 0 to 255ms)
+ *   This command executes a short delay
+ * 
+ * Long Delay
+ *   Command Byte = 0xFB
+ *   Data byte 0 : High byte of delay in milliseconds
+ *   Data byte 1 : Low byte of delay in milliseconds
+ *   This command executes a long delay (from 0 to 65535 ms)
+ * 
+ * Store Timings
+ *   Command Bytes = 0xFA
+ *   Data byte 0 : High byte of "Speed when pen is down (steps/s)"
+ *   Data byte 1 : Low byte of "Speed when pen is down (steps/s)"
+ *   Data byte 2 : High byte of "Speed when pen is up (steps/s)"
+ *   Data byte 3 : Low byte of "Speed when pen is up (steps/s)"
+ *   Data byte 4 : Pen raising speed (%)
+ *   Data byte 5 : High byte of "Delay after raising pen (ms)"
+ *   Data byte 6 : Low byte of "Delay after raising pen (ms)"
+ *   Data byte 7 : "Pen lowering speed (%)"
+ *   Data byte 8 : High byte of "Delay after lowering pen (ms)"
+ *   Data byte 9 : Low byte of "Delay after lowering pen (ms)"
+ *   Data byte 10 : "Pen up position, 0-100%"
+ *   Data byte 11 : "Pen down position, 0-100%"
+ *   This command is put in the Flash once at the beginning of the recording
+ *   and captures all of the settings for that recording.
+ * 
+ * Very Long Move
+ *   Command Byte = 0xF2
+ *   Data byte 0 : High byte of move duration
+ *   Data byte 1 : Mid byte of move duration
+ *   Data byte 2 : Low byte of move duration
+ *   Data byte 3 : High byte of motor 1 steps (signed)
+ *   Data byte 4 : Mid byte of motor 1 steps
+ *   Data byte 5 : Low byte of motor 1 steps
+ *   Data byte 6 : High byte of motor 2 steps (signed)
+ *   Data byte 7 : Mid byte of motor 2 steps
+ *   Data byte 8 : Low byte of motor 2 steps 
+ *   This command is a move command where duration, motor 1 steps and motor 2
+ *   steps are all 24 bits, and is used when a Long Move command can't store
+ *   the values needed.
+ *  
+ * Long Move
+ *   Command Byte = 0xF1
+ *   Data byte 0 : High byte of move duration
+ *   Data byte 1 : Low byte of move duration
+ *   Data byte 2 : High byte of motor 1 steps (signed)
+ *   Data byte 3 : Low byte of motor 1 steps
+ *   Data byte 4 : High byte of motor 2 steps (signed)
+ *   Data byte 5 : Low byte of motor 2 steps
+ *   This command is a move command where duration, motor 1 steps and motor 2 
+ *   steps are all 16 bits, and is used when a Short move command can't store
+ *   the values needed.
+ * 
+ * Short Move
+ *   Command Byte = 0x01 to 0xF0 (duration of move in ms)
+ *   Data byte 0 : motor 1 steps (signed)
+ *   Data byte 1 : motor 2 steps (signed)
+ *   This command is for moves that can fit into the following limits:
+ *     Duration: From 1 to 240ms
+ *     Step 1: From -128 to 127
+ *     Step 2: From -128 to 127
+ * 
+ */
+
+#define DEMO_COMMAND_END                    0xFF
+#define DEMO_COMMAND_END_LENGTH             0x01
+#define DEMO_COMMAND_PEN_UP                 0xFE
+#define DEMO_COMMAND_PEN_UP_LENGTH          0x01
+#define DEMO_COMMAND_PEN_DOWN               0xFD
+#define DEMO_COMMAND_PEN_DOWN_LENGTH        0x01
+#define DEMO_COMMAND_SHORT_DELAY            0xFC
+#define DEMO_COMMAND_SHORT_DELAY_LENGTH     0x02
+#define DEMO_COMMAND_LONG_DELAY             0xFB
+#define DEMO_COMMAND_LONG_DELAY_LENGTH      0x03
+#define DEMO_COMMAND_STORE_TIMINGS          0xFA
+#define DEMO_COMMAND_STORE_TIMINGS_LENGTH   0x0D
+#define DEMO_COMMAND_VERY_LONG_MOVE         0xF2
+#define DEMO_COMMAND_VERY_LONG_MOVE_LENGTH  0x0A
+#define DEMO_COMMAND_LONG_MOVE              0xF1
+#define DEMO_COMMAND_LONG_MOVE_LENGTH       0x07
+#define DEMO_COMMAND_SHORT_MOVE_LENGTH      0x03
+
+
+
+#define PF_START_ADDR       0xB000
+#define PF_END_ADDR         0xFFFF
+#define CONFIG_START_ADDR   0xFFF8
+#define CONFIG_LENGTH_BYTES 8
+
+/* These are the states that LED2 can be in. */
+typedef enum
 {
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 128, 77, 0},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 167, -5, -33},
-    {COMD_SM, 87, -17, 4},
-    {COMD_SM, 78, -14, 7},
-    {COMD_SM, 76, -13, 8},
-    {COMD_SM, 74, -11, 10},
-    {COMD_SM, 68, -8, 11},
-    {COMD_SM, 72, -6, 13},
-    {COMD_SM, 78, -4, 15},
-    {COMD_SM, 80, -1, 16},
-    {COMD_SM, 50, 0, 10},
-    {COMD_SM, 46, 2, 9},
-    {COMD_SM, 51, 2, 10},
-    {COMD_SM, 45, 4, 8},
-    {COMD_SM, 45, 4, 8},
-    {COMD_SM, 47, 5, 8},
-    {COMD_SM, 49, 7, 7},
-    {COMD_SM, 46, 7, 6},
-    {COMD_SM, 50, 8, 6},
-    {COMD_SM, 51, 9, 5},
-    {COMD_SM, 54, 10, 4},
-    {COMD_SM, 52, 10, 3},
-    {COMD_SM, 57, 11, 3},
-    {COMD_SM, 61, 12, 2},
-    {COMD_SM, 65, 13, 1},
-    {COMD_SM, 70, 14, 1},
-    {COMD_SM, 70, 14, -1},
-    {COMD_SM, 65, 13, -1},
-    {COMD_SM, 61, 12, -2},
-    {COMD_SM, 62, 12, -3},
-    {COMD_SM, 57, 11, -3},
-    {COMD_SM, 54, 10, -4},
-    {COMD_SM, 51, 9, -5},
-    {COMD_SM, 50, 8, -6},
-    {COMD_SM, 53, 8, -7},
-    {COMD_SM, 46, 6, -7},
-    {COMD_SM, 46, 6, -7},
-    {COMD_SM, 45, 4, -8},
-    {COMD_SM, 45, 4, -8},
-    {COMD_SM, 46, 2, -9},
-    {COMD_SM, 46, 2, -9},
-    {COMD_SM, 50, 0, -10},
-    {COMD_SM, 45, 0, -9},
-    {COMD_SM, 46, -2, -9},
-    {COMD_SM, 41, -2, -8},
-    {COMD_SM, 43, -3, -8},
-    {COMD_SM, 47, -5, -8},
-    {COMD_SM, 43, -5, -7},
-    {COMD_SM, 49, -7, -7},
-    {COMD_SM, 46, -7, -6},
-    {COMD_SM, 50, -8, -6},
-    {COMD_SM, 51, -9, -5},
-    {COMD_SM, 54, -10, -4},
-    {COMD_SM, 57, -11, -3},
-    {COMD_SM, 57, -11, -3},
-    {COMD_SM, 61, -12, -2},
-    {COMD_SM, 65, -13, -1},
-    {COMD_SM, 70, -14, -1},
-    {COMD_SM, 50, -10, 1},
-    {COMD_SM, 710, 0, 142},
-    {COMD_SM, 91, -18, -2},
-    {COMD_SM, 81, -16, -3},
-    {COMD_SM, 72, -13, -6},
-    {COMD_SM, 65, -11, -7},
-    {COMD_SM, 60, -9, -8},
-    {COMD_SM, 58, -6, -10},
-    {COMD_SM, 54, -4, -10},
-    {COMD_SM, 60, -1, -12},
-    {COMD_SM, 40, 1, -8},
-    {COMD_SM, 41, 2, -8},
-    {COMD_SM, 38, 3, -7},
-    {COMD_SM, 43, 5, -7},
-    {COMD_SM, 46, 7, -6},
-    {COMD_SM, 47, 8, -5},
-    {COMD_SM, 51, 9, -5},
-    {COMD_SM, 63, 12, -4},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 206, 63, 106},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 530, 0, -106},
-    {COMD_SM, 65, 13, 1},
-    {COMD_SM, 62, 12, 3},
-    {COMD_SM, 52, 10, 3},
-    {COMD_SM, 47, 8, 5},
-    {COMD_SM, 64, 10, 8},
-    {COMD_SM, 61, 7, 10},
-    {COMD_SM, 27, 2, 5},
-    {COMD_SM, 27, 2, 5},
-    {COMD_SM, 60, 1, 12},
-    {COMD_SM, 55, -1, 11},
-    {COMD_SM, 47, -3, 9},
-    {COMD_SM, 54, -6, 9},
-    {COMD_SM, 53, -7, 8},
-    {COMD_SM, 61, -10, 7},
-    {COMD_SM, 60, -11, 5},
-    {COMD_SM, 68, -13, 4},
-    {COMD_SM, 70, -14, 1},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 400, -156, -182},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 162, -5, -32},
-    {COMD_SM, 45, -9, -1},
-    {COMD_SM, 38, -7, -3},
-    {COMD_SM, 29, -5, -3},
-    {COMD_SM, 32, -5, -4},
-    {COMD_SM, 39, -5, -6},
-    {COMD_SM, 43, -3, -8},
-    {COMD_SM, 46, -2, -9},
-    {COMD_SM, 50, -1, -10},
-    {COMD_SM, 50, 1, -10},
-    {COMD_SM, 51, 2, -10},
-    {COMD_SM, 43, 3, -8},
-    {COMD_SM, 39, 5, -6},
-    {COMD_SM, 42, 6, -6},
-    {COMD_SM, 43, 7, -5},
-    {COMD_SM, 43, 8, -3},
-    {COMD_SM, 47, 9, -3},
-    {COMD_SM, 96, 19, -2},
-    {COMD_SM, 155, 31, 0},
-    {COMD_SM, 43, -7, 5},
-    {COMD_SM, 42, -6, 6},
-    {COMD_SM, 39, -5, 6},
-    {COMD_SM, 40, -4, 7},
-    {COMD_SM, 36, -4, 6},
-    {COMD_SM, 36, -2, 7},
-    {COMD_SM, 40, -1, 8},
-    {COMD_SM, 40, -1, 8},
-    {COMD_SM, 45, 1, 9},
-    {COMD_SM, 45, 1, 9},
-    {COMD_SM, 47, 3, 9},
-    {COMD_SM, 45, 4, 8},
-    {COMD_SM, 40, 4, 7},
-    {COMD_SM, 46, 6, 7},
-    {COMD_SM, 46, 7, 6},
-    {COMD_SM, 50, 8, 6},
-    {COMD_SM, 51, 9, 5},
-    {COMD_SM, 49, 9, 4},
-    {COMD_SM, 54, 10, 4},
-    {COMD_SM, 52, 10, 3},
-    {COMD_SM, 107, 21, 4},
-    {COMD_SM, 115, 23, 1},
-    {COMD_SM, 80, 16, 0},
-    {COMD_SM, 81, 16, -2},
-    {COMD_SM, 72, 14, -3},
-    {COMD_SM, 74, 14, -5},
-    {COMD_SM, 74, 14, -5},
-    {COMD_SM, 65, 11, -7},
-    {COMD_SM, 64, 10, -8},
-    {COMD_SM, 57, 8, -8},
-    {COMD_SM, 61, 7, -10},
-    {COMD_SM, 60, 5, -11},
-    {COMD_SM, 56, 2, -11},
-    {COMD_SM, 65, 1, -13},
-    {COMD_SM, 40, 0, -8},
-    {COMD_SM, 41, -2, -8},
-    {COMD_SM, 36, -2, -7},
-    {COMD_SM, 40, -4, -7},
-    {COMD_SM, 40, -4, -7},
-    {COMD_SM, 46, -6, -7},
-    {COMD_SM, 46, -7, -6},
-    {COMD_SM, 43, -7, -5},
-    {COMD_SM, 135, 27, 0},
-    {COMD_SM, 150, 0, -30},
-    {COMD_SM, 990, -198, 0},
-    {COMD_SM, 125, -25, 0},
-    {COMD_SM, 105, -21, 2},
-    {COMD_SM, 86, -17, 3},
-    {COMD_SM, 68, -13, 4},
-    {COMD_SM, 56, -10, 5},
-    {COMD_SM, 61, -10, 7},
-    {COMD_SM, 53, -8, 7},
-    {COMD_SM, 61, -7, 10},
-    {COMD_SM, 58, -6, 10},
-    {COMD_SM, 63, -4, 12},
-    {COMD_SM, 61, -2, 12},
-    {COMD_SM, 70, -1, 14},
-    {COMD_SM, 80, 1, 16},
-    {COMD_SM, 78, 4, 15},
-    {COMD_SM, 72, 6, 13},
-    {COMD_SM, 68, 8, 11},
-    {COMD_SM, 32, 4, 5},
-    {COMD_SM, 39, 6, 5},
-    {COMD_SM, 34, 6, 3},
-    {COMD_SM, 38, 7, 3},
-    {COMD_SM, 36, 7, 2},
-    {COMD_SM, 41, 8, 2},
-    {COMD_SM, 85, 17, 1},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 234, 138, -27},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 105, -21, -1},
-    {COMD_SM, 91, -18, -3},
-    {COMD_SM, 79, -15, -5},
-    {COMD_SM, 34, -6, -3},
-    {COMD_SM, 34, -6, -3},
-    {COMD_SM, 60, -9, -8},
-    {COMD_SM, 57, -7, -9},
-    {COMD_SM, 52, -3, -10},
-    {COMD_SM, 51, -2, -10},
-    {COMD_SM, 56, 2, -11},
-    {COMD_SM, 52, 3, -10},
-    {COMD_SM, 57, 7, -9},
-    {COMD_SM, 60, 9, -8},
-    {COMD_SM, 29, 5, -3},
-    {COMD_SM, 38, 7, -3},
-    {COMD_SM, 74, 14, -5},
-    {COMD_SM, 91, 18, -3},
-    {COMD_SM, 100, 20, -1},
-    {COMD_SM, 100, 20, 1},
-    {COMD_SM, 86, 17, 3},
-    {COMD_SM, 79, 15, 5},
-    {COMD_SM, 69, 12, 7},
-    {COMD_SM, 60, 9, 8},
-    {COMD_SM, 57, 7, 9},
-    {COMD_SM, 49, 4, 9},
-    {COMD_SM, 55, 1, 11},
-    {COMD_SM, 50, -1, 10},
-    {COMD_SM, 54, -4, 10},
-    {COMD_SM, 57, -7, 9},
-    {COMD_SM, 60, -9, 8},
-    {COMD_SM, 67, -12, 6},
-    {COMD_SM, 74, -14, 5},
-    {COMD_SM, 86, -17, 3},
-    {COMD_SM, 95, -19, 1},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 375, -138, -178},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 162, -5, -32},
-    {COMD_SM, 45, -9, -1},
-    {COMD_SM, 38, -7, -3},
-    {COMD_SM, 29, -5, -3},
-    {COMD_SM, 32, -5, -4},
-    {COMD_SM, 39, -5, -6},
-    {COMD_SM, 43, -3, -8},
-    {COMD_SM, 46, -2, -9},
-    {COMD_SM, 50, -1, -10},
-    {COMD_SM, 50, 1, -10},
-    {COMD_SM, 51, 2, -10},
-    {COMD_SM, 43, 3, -8},
-    {COMD_SM, 39, 5, -6},
-    {COMD_SM, 42, 6, -6},
-    {COMD_SM, 43, 7, -5},
-    {COMD_SM, 43, 8, -3},
-    {COMD_SM, 47, 9, -3},
-    {COMD_SM, 96, 19, -2},
-    {COMD_SM, 155, 31, 0},
-    {COMD_SM, 43, -7, 5},
-    {COMD_SM, 42, -6, 6},
-    {COMD_SM, 39, -5, 6},
-    {COMD_SM, 36, -4, 6},
-    {COMD_SM, 40, -4, 7},
-    {COMD_SM, 36, -2, 7},
-    {COMD_SM, 40, -1, 8},
-    {COMD_SM, 40, -1, 8},
-    {COMD_SM, 45, 1, 9},
-    {COMD_SM, 45, 1, 9},
-    {COMD_SM, 47, 3, 9},
-    {COMD_SM, 40, 4, 7},
-    {COMD_SM, 45, 4, 8},
-    {COMD_SM, 46, 6, 7},
-    {COMD_SM, 46, 7, 6},
-    {COMD_SM, 50, 8, 6},
-    {COMD_SM, 51, 9, 5},
-    {COMD_SM, 49, 9, 4},
-    {COMD_SM, 54, 10, 4},
-    {COMD_SM, 52, 10, 3},
-    {COMD_SM, 107, 21, 4},
-    {COMD_SM, 115, 23, 1},
-    {COMD_SM, 80, 16, -1},
-    {COMD_SM, 80, 16, -1},
-    {COMD_SM, 72, 14, -3},
-    {COMD_SM, 74, 14, -5},
-    {COMD_SM, 74, 14, -5},
-    {COMD_SM, 65, 11, -7},
-    {COMD_SM, 64, 10, -8},
-    {COMD_SM, 57, 8, -8},
-    {COMD_SM, 61, 7, -10},
-    {COMD_SM, 60, 5, -11},
-    {COMD_SM, 56, 2, -11},
-    {COMD_SM, 65, 1, -13},
-    {COMD_SM, 40, 0, -8},
-    {COMD_SM, 41, -2, -8},
-    {COMD_SM, 36, -2, -7},
-    {COMD_SM, 40, -4, -7},
-    {COMD_SM, 40, -4, -7},
-    {COMD_SM, 46, -6, -7},
-    {COMD_SM, 46, -7, -6},
-    {COMD_SM, 43, -7, -5},
-    {COMD_SM, 135, 27, 0},
-    {COMD_SM, 150, 0, -30},
-    {COMD_SM, 990, -198, 0},
-    {COMD_SM, 125, -25, 0},
-    {COMD_SM, 105, -21, 2},
-    {COMD_SM, 86, -17, 3},
-    {COMD_SM, 68, -13, 4},
-    {COMD_SM, 56, -10, 5},
-    {COMD_SM, 61, -10, 7},
-    {COMD_SM, 53, -8, 7},
-    {COMD_SM, 61, -7, 10},
-    {COMD_SM, 58, -6, 10},
-    {COMD_SM, 63, -4, 12},
-    {COMD_SM, 61, -2, 12},
-    {COMD_SM, 70, -1, 14},
-    {COMD_SM, 80, 1, 16},
-    {COMD_SM, 78, 4, 15},
-    {COMD_SM, 72, 6, 13},
-    {COMD_SM, 68, 8, 11},
-    {COMD_SM, 32, 4, 5},
-    {COMD_SM, 36, 6, 4},
-    {COMD_SM, 36, 6, 4},
-    {COMD_SM, 38, 7, 3},
-    {COMD_SM, 36, 7, 2},
-    {COMD_SM, 41, 8, 2},
-    {COMD_SM, 85, 17, 1},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 234, 138, -27},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 105, -21, -1},
-    {COMD_SM, 91, -18, -3},
-    {COMD_SM, 79, -15, -5},
-    {COMD_SM, 34, -6, -3},
-    {COMD_SM, 34, -6, -3},
-    {COMD_SM, 60, -9, -8},
-    {COMD_SM, 57, -7, -9},
-    {COMD_SM, 52, -3, -10},
-    {COMD_SM, 56, -2, -11},
-    {COMD_SM, 51, 2, -10},
-    {COMD_SM, 52, 3, -10},
-    {COMD_SM, 57, 7, -9},
-    {COMD_SM, 60, 9, -8},
-    {COMD_SM, 29, 5, -3},
-    {COMD_SM, 40, 7, -4},
-    {COMD_SM, 73, 14, -4},
-    {COMD_SM, 91, 18, -3},
-    {COMD_SM, 100, 20, -1},
-    {COMD_SM, 100, 20, 1},
-    {COMD_SM, 86, 17, 3},
-    {COMD_SM, 79, 15, 5},
-    {COMD_SM, 69, 12, 7},
-    {COMD_SM, 60, 9, 8},
-    {COMD_SM, 57, 7, 9},
-    {COMD_SM, 49, 4, 9},
-    {COMD_SM, 55, 1, 11},
-    {COMD_SM, 50, -1, 10},
-    {COMD_SM, 54, -4, 10},
-    {COMD_SM, 57, -7, 9},
-    {COMD_SM, 60, -9, 8},
-    {COMD_SM, 67, -12, 6},
-    {COMD_SM, 74, -14, 5},
-    {COMD_SM, 86, -17, 3},
-    {COMD_SM, 95, -19, 1},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 397, -119, -206},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 150, 0, 30},
-    {COMD_SM, 1580, 316, 0},
-    {COMD_SM, 165, 0, -33},
-    {COMD_SM, 560, -112, 0},
-    {COMD_SM, 43, 7, -5},
-    {COMD_SM, 42, 6, -6},
-    {COMD_SM, 39, 5, -6},
-    {COMD_SM, 39, 5, -6},
-    {COMD_SM, 38, 3, -7},
-    {COMD_SM, 36, 2, -7},
-    {COMD_SM, 36, 2, -7},
-    {COMD_SM, 40, 0, -8},
-    {COMD_SM, 45, 0, -9},
-    {COMD_SM, 41, -2, -8},
-    {COMD_SM, 41, -2, -8},
-    {COMD_SM, 45, -4, -8},
-    {COMD_SM, 47, -5, -8},
-    {COMD_SM, 43, -5, -7},
-    {COMD_SM, 46, -7, -6},
-    {COMD_SM, 43, -7, -5},
-    {COMD_SM, 47, -8, -5},
-    {COMD_SM, 49, -9, -4},
-    {COMD_SM, 54, -10, -4},
-    {COMD_SM, 52, -10, -3},
-    {COMD_SM, 57, -11, -3},
-    {COMD_SM, 60, -12, -1},
-    {COMD_SM, 120, -24, -2},
-    {COMD_SM, 70, -14, 0},
-    {COMD_SM, 71, -14, 2},
-    {COMD_SM, 61, -12, 2},
-    {COMD_SM, 61, -12, 2},
-    {COMD_SM, 59, -11, 4},
-    {COMD_SM, 54, -10, 4},
-    {COMD_SM, 51, -9, 5},
-    {COMD_SM, 51, -9, 5},
-    {COMD_SM, 49, -7, 7},
-    {COMD_SM, 46, -7, 6},
-    {COMD_SM, 43, -5, 7},
-    {COMD_SM, 43, -5, 7},
-    {COMD_SM, 45, -4, 8},
-    {COMD_SM, 36, -2, 7},
-    {COMD_SM, 41, -2, 8},
-    {COMD_SM, 45, 0, 9},
-    {COMD_SM, 40, 0, 8},
-    {COMD_SM, 41, 2, 8},
-    {COMD_SM, 38, 3, 7},
-    {COMD_SM, 38, 3, 7},
-    {COMD_SM, 39, 5, 6},
-    {COMD_SM, 42, 6, 6},
-    {COMD_SM, 46, 7, 6},
-    {COMD_SM, 47, 8, 5},
-    {COMD_SM, 145, -29, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 193, 116, 0},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 95, -19, -1},
-    {COMD_SM, 80, -16, -1},
-    {COMD_SM, 72, -14, -3},
-    {COMD_SM, 54, -10, -4},
-    {COMD_SM, 40, -7, -4},
-    {COMD_SM, 39, -6, -5},
-    {COMD_SM, 32, -5, -4},
-    {COMD_SM, 35, -5, -5},
-    {COMD_SM, 34, -3, -6},
-    {COMD_SM, 27, -2, -5},
-    {COMD_SM, 32, -2, -6},
-    {COMD_SM, 35, 0, -7},
-    {COMD_SM, 50, 1, -10},
-    {COMD_SM, 49, 4, -9},
-    {COMD_SM, 57, 7, -9},
-    {COMD_SM, 64, 10, -8},
-    {COMD_SM, 69, 12, -7},
-    {COMD_SM, 84, 16, -5},
-    {COMD_SM, 86, 17, -3},
-    {COMD_SM, 105, 21, -1},
-    {COMD_SM, 105, 21, 1},
-    {COMD_SM, 91, 18, 3},
-    {COMD_SM, 79, 15, 5},
-    {COMD_SM, 34, 6, 3},
-    {COMD_SM, 34, 6, 3},
-    {COMD_SM, 60, 9, 8},
-    {COMD_SM, 53, 7, 8},
-    {COMD_SM, 54, 4, 10},
-    {COMD_SM, 50, 1, 10},
-    {COMD_SM, 50, -1, 10},
-    {COMD_SM, 54, -4, 10},
-    {COMD_SM, 57, -7, 9},
-    {COMD_SM, 64, -10, 8},
-    {COMD_SM, 67, -12, 6},
-    {COMD_SM, 79, -15, 5},
-    {COMD_SM, 86, -17, 3},
-    {COMD_SM, 100, -20, 1},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 272, -1, -163},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 75, 15, -1},
-    {COMD_SM, 70, 14, -1},
-    {COMD_SM, 72, 14, -3},
-    {COMD_SM, 62, 12, -3},
-    {COMD_SM, 59, 11, -4},
-    {COMD_SM, 60, 11, -5},
-    {COMD_SM, 54, 9, -6},
-    {COMD_SM, 53, 8, -7},
-    {COMD_SM, 42, 6, -6},
-    {COMD_SM, 43, 5, -7},
-    {COMD_SM, 40, 4, -7},
-    {COMD_SM, 40, 4, -7},
-    {COMD_SM, 43, 3, -8},
-    {COMD_SM, 41, 2, -8},
-    {COMD_SM, 40, 1, -8},
-    {COMD_SM, 45, 0, -9},
-    {COMD_SM, 50, 0, -10},
-    {COMD_SM, 46, -2, -9},
-    {COMD_SM, 46, -2, -9},
-    {COMD_SM, 43, -3, -8},
-    {COMD_SM, 47, -5, -8},
-    {COMD_SM, 43, -5, -7},
-    {COMD_SM, 46, -6, -7},
-    {COMD_SM, 50, -8, -6},
-    {COMD_SM, 50, -8, -6},
-    {COMD_SM, 47, -8, -5},
-    {COMD_SM, 56, -10, -5},
-    {COMD_SM, 52, -10, -3},
-    {COMD_SM, 57, -11, -3},
-    {COMD_SM, 61, -12, -2},
-    {COMD_SM, 65, -13, -1},
-    {COMD_SM, 65, -13, 0},
-    {COMD_SM, 105, -21, 0},
-    {COMD_SM, 96, -19, 2},
-    {COMD_SM, 82, -16, 4},
-    {COMD_SM, 74, -14, 5},
-    {COMD_SM, 67, -12, 6},
-    {COMD_SM, 61, -10, 7},
-    {COMD_SM, 64, -9, 9},
-    {COMD_SM, 64, -8, 10},
-    {COMD_SM, 63, -6, 11},
-    {COMD_SM, 60, -5, 11},
-    {COMD_SM, 61, -2, 12},
-    {COMD_SM, 60, -1, 12},
-    {COMD_SM, 50, 0, 10},
-    {COMD_SM, 46, 2, 9},
-    {COMD_SM, 46, 2, 9},
-    {COMD_SM, 45, 4, 8},
-    {COMD_SM, 45, 4, 8},
-    {COMD_SM, 47, 5, 8},
-    {COMD_SM, 46, 7, 6},
-    {COMD_SM, 49, 7, 7},
-    {COMD_SM, 50, 8, 6},
-    {COMD_SM, 51, 9, 5},
-    {COMD_SM, 54, 10, 4},
-    {COMD_SM, 52, 10, 3},
-    {COMD_SM, 62, 12, 3},
-    {COMD_SM, 61, 12, 2},
-    {COMD_SM, 70, 14, 1},
-    {COMD_SM, 70, 14, 1},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 57, 0, -34},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 105, -21, -1},
-    {COMD_SM, 91, -18, -3},
-    {COMD_SM, 79, -15, -5},
-    {COMD_SM, 34, -6, -3},
-    {COMD_SM, 36, -6, -4},
-    {COMD_SM, 64, -10, -8},
-    {COMD_SM, 61, -7, -10},
-    {COMD_SM, 54, -4, -10},
-    {COMD_SM, 60, -1, -12},
-    {COMD_SM, 60, 1, -12},
-    {COMD_SM, 54, 4, -10},
-    {COMD_SM, 61, 7, -10},
-    {COMD_SM, 64, 10, -8},
-    {COMD_SM, 36, 6, -4},
-    {COMD_SM, 34, 6, -3},
-    {COMD_SM, 84, 16, -5},
-    {COMD_SM, 91, 18, -3},
-    {COMD_SM, 105, 21, -1},
-    {COMD_SM, 100, 20, 1},
-    {COMD_SM, 86, 17, 3},
-    {COMD_SM, 79, 15, 5},
-    {COMD_SM, 38, 7, 3},
-    {COMD_SM, 32, 5, 4},
-    {COMD_SM, 67, 10, 9},
-    {COMD_SM, 57, 7, 9},
-    {COMD_SM, 59, 4, 11},
-    {COMD_SM, 55, 1, 11},
-    {COMD_SM, 60, -1, 12},
-    {COMD_SM, 54, -4, 10},
-    {COMD_SM, 61, -7, 10},
-    {COMD_SM, 64, -10, 8},
-    {COMD_SM, 32, -5, 4},
-    {COMD_SM, 38, -7, 3},
-    {COMD_SM, 79, -15, 5},
-    {COMD_SM, 91, -18, 3},
-    {COMD_SM, 100, -20, 1},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 444, -80, -254},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 172, -34, -5},
-    {COMD_SM, 67, -3, 13},
-    {COMD_SM, 60, -1, 12},
-    {COMD_SM, 40, 1, 8},
-    {COMD_SM, 35, 1, 7},
-    {COMD_SM, 36, 2, 7},
-    {COMD_SM, 29, 3, 5},
-    {COMD_SM, 25, 3, 4},
-    {COMD_SM, 32, 5, 4},
-    {COMD_SM, 25, 4, 3},
-    {COMD_SM, 29, 5, 3},
-    {COMD_SM, 35, 7, 1},
-    {COMD_SM, 51, 10, 2},
-    {COMD_SM, 145, 29, 1},
-    {COMD_SM, 660, 132, 0},
-    {COMD_SM, 115, 0, 23},
-    {COMD_SM, 150, 30, 0},
-    {COMD_SM, 115, 0, -23},
-    {COMD_SM, 285, 57, 0},
-    {COMD_SM, 201, 23, -33},
-    {COMD_SM, 400, -80, 0},
-    {COMD_SM, 160, 0, -32},
-    {COMD_SM, 150, -30, 0},
-    {COMD_SM, 160, 0, 32},
-    {COMD_SM, 670, -134, 0},
-    {COMD_SM, 70, -14, 0},
-    {COMD_SM, 35, -7, -1},
-    {COMD_SM, 29, -5, -3},
-    {COMD_SM, 21, -3, -3},
-    {COMD_SM, 27, -2, -5},
-    {COMD_SM, 30, -1, -6},
-    {COMD_SM, 71, 2, -14},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 1880, -166, 1116},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 455, -88, -23},
-    {COMD_SM, 65, 0, -13},
-    {COMD_SM, 348, 68, -15},
-    {COMD_SM, 76, -15, -2},
-    {COMD_SM, 272, -53, -12},
-    {COMD_SM, 65, 0, -13},
-    {COMD_SM, 455, 88, -23},
-    {COMD_SM, 60, 0, 12},
-    {COMD_SM, 263, -51, 13},
-    {COMD_SM, 87, -17, 4},
-    {COMD_SM, 87, 17, 4},
-    {COMD_SM, 261, 51, 11},
-    {COMD_SM, 60, 0, 12},
-    {COMD_SM, 262, -51, 12},
-    {COMD_SM, 97, -19, 4},
-    {COMD_SM, 97, 19, 4},
-    {COMD_SM, 262, 51, 12},
-    {COMD_SM, 65, 0, 13},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 255, -88, -125},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 454, 88, 22},
-    {COMD_SM, 65, 0, -13},
-    {COMD_SM, 261, -51, -11},
-    {COMD_SM, 98, -19, -5},
-    {COMD_SM, 97, 19, -4},
-    {COMD_SM, 261, 51, -11},
-    {COMD_SM, 65, 0, -13},
-    {COMD_SM, 261, -51, -11},
-    {COMD_SM, 87, -17, -4},
-    {COMD_SM, 87, 17, -4},
-    {COMD_SM, 263, 51, -13},
-    {COMD_SM, 60, 0, -12},
-    {COMD_SM, 455, -88, 23},
-    {COMD_SM, 65, 0, 13},
-    {COMD_SM, 272, 53, 12},
-    {COMD_SM, 76, 15, 3},
-    {COMD_SM, 348, -68, 15},
-    {COMD_SM, 65, 0, 13},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 172, 0, -103},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 454, 88, 22},
-    {COMD_SM, 60, 0, -12},
-    {COMD_SM, 262, -51, -12},
-    {COMD_SM, 98, -19, -5},
-    {COMD_SM, 96, 19, -3},
-    {COMD_SM, 262, 51, -12},
-    {COMD_SM, 65, 0, -13},
-    {COMD_SM, 261, -51, -11},
-    {COMD_SM, 87, -17, -4},
-    {COMD_SM, 87, 17, -4},
-    {COMD_SM, 263, 51, -13},
-    {COMD_SM, 60, 0, -12},
-    {COMD_SM, 455, -88, 23},
-    {COMD_SM, 65, 0, 13},
-    {COMD_SM, 272, 53, 12},
-    {COMD_SM, 76, 15, 3},
-    {COMD_SM, 348, -68, 15},
-    {COMD_SM, 65, 0, 13},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 155, 0, -93},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 85, 17, 0},
-    {COMD_SM, 70, 0, -14},
-    {COMD_SM, 85, -17, 0},
-    {COMD_SM, 70, 0, 14},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 151, 28, -86},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 65, -1, -13},
-    {COMD_SM, 36, -7, 2},
-    {COMD_SM, 32, -6, 2},
-    {COMD_SM, 25, -4, 3},
-    {COMD_SM, 32, -5, 4},
-    {COMD_SM, 29, -3, 5},
-    {COMD_SM, 27, -2, 5},
-    {COMD_SM, 27, -2, 5},
-    {COMD_SM, 30, 0, 6},
-    {COMD_SM, 40, 1, 8},
-    {COMD_SM, 36, 2, 7},
-    {COMD_SM, 36, 4, 6},
-    {COMD_SM, 35, 5, 5},
-    {COMD_SM, 36, 6, 4},
-    {COMD_SM, 43, 8, 3},
-    {COMD_SM, 46, 9, 2},
-    {COMD_SM, 50, 10, 0},
-    {COMD_SM, 55, 11, 0},
-    {COMD_SM, 46, 9, -2},
-    {COMD_SM, 43, 8, -3},
-    {COMD_SM, 40, 7, -4},
-    {COMD_SM, 35, 5, -5},
-    {COMD_SM, 36, 4, -6},
-    {COMD_SM, 38, 3, -7},
-    {COMD_SM, 35, 0, -7},
-    {COMD_SM, 35, 0, -7},
-    {COMD_SM, 34, -3, -6},
-    {COMD_SM, 34, -3, -6},
-    {COMD_SM, 39, -6, -5},
-    {COMD_SM, 36, -6, -4},
-    {COMD_SM, 43, -8, -3},
-    {COMD_SM, 46, -9, -2},
-    {COMD_SM, 55, -11, -1},
-    {COMD_SM, 21, -4, 1},
-    {COMD_SM, 275, 0, 55},
-    {COMD_SM, 35, -7, -1},
-    {COMD_SM, 32, -6, -2},
-    {COMD_SM, 27, -5, -2},
-    {COMD_SM, 22, -4, -2},
-    {COMD_SM, 25, -3, -4},
-    {COMD_SM, 21, -3, -3},
-    {COMD_SM, 21, -1, -4},
-    {COMD_SM, 25, -1, -5},
-    {COMD_SM, 30, 1, -6},
-    {COMD_SM, 32, 4, -5},
-    {COMD_SM, 35, 5, -5},
-    {COMD_SM, 43, 8, -3},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 80, 25, 41},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 205, 0, -41},
-    {COMD_SM, 45, 9, 1},
-    {COMD_SM, 38, 7, 3},
-    {COMD_SM, 28, 4, 4},
-    {COMD_SM, 21, 3, 3},
-    {COMD_SM, 22, 2, 4},
-    {COMD_SM, 25, 0, 5},
-    {COMD_SM, 20, 0, 4},
-    {COMD_SM, 22, -2, 4},
-    {COMD_SM, 18, -2, 3},
-    {COMD_SM, 21, -3, 3},
-    {COMD_SM, 25, -4, 3},
-    {COMD_SM, 22, -4, 2},
-    {COMD_SM, 25, -5, 1},
-    {COMD_SM, 25, -5, 1},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 151, -60, -68},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 62, -3, -12},
-    {COMD_SM, 25, -5, -1},
-    {COMD_SM, 25, -4, -3},
-    {COMD_SM, 29, -3, -5},
-    {COMD_SM, 41, -2, -8},
-    {COMD_SM, 36, 2, -7},
-    {COMD_SM, 34, 3, -6},
-    {COMD_SM, 32, 5, -4},
-    {COMD_SM, 32, 6, -2},
-    {COMD_SM, 35, 7, -1},
-    {COMD_SM, 65, 13, 0},
-    {COMD_SM, 36, -6, 4},
-    {COMD_SM, 29, -3, 5},
-    {COMD_SM, 27, -2, 5},
-    {COMD_SM, 30, -1, 6},
-    {COMD_SM, 35, 1, 7},
-    {COMD_SM, 36, 2, 7},
-    {COMD_SM, 32, 4, 5},
-    {COMD_SM, 39, 6, 5},
-    {COMD_SM, 38, 7, 3},
-    {COMD_SM, 43, 8, 3},
-    {COMD_SM, 40, 8, 1},
-    {COMD_SM, 45, 9, 1},
-    {COMD_SM, 60, 12, -1},
-    {COMD_SM, 57, 11, -3},
-    {COMD_SM, 56, 10, -5},
-    {COMD_SM, 46, 7, -6},
-    {COMD_SM, 22, 2, -4},
-    {COMD_SM, 22, 2, -4},
-    {COMD_SM, 21, 1, -4},
-    {COMD_SM, 25, 0, -5},
-    {COMD_SM, 30, 0, -6},
-    {COMD_SM, 34, -3, -6},
-    {COMD_SM, 32, -4, -5},
-    {COMD_SM, 35, -5, -5},
-    {COMD_SM, 50, 10, 0},
-    {COMD_SM, 55, 0, -11},
-    {COMD_SM, 380, -76, 0},
-    {COMD_SM, 90, -18, 1},
-    {COMD_SM, 30, -6, 1},
-    {COMD_SM, 25, -5, 1},
-    {COMD_SM, 47, -8, 5},
-    {COMD_SM, 46, -6, 7},
-    {COMD_SM, 45, -4, 8},
-    {COMD_SM, 50, -1, 10},
-    {COMD_SM, 35, 1, 7},
-    {COMD_SM, 25, 1, 5},
-    {COMD_SM, 27, 2, 5},
-    {COMD_SM, 29, 3, 5},
-    {COMD_SM, 25, 4, 3},
-    {COMD_SM, 29, 5, 3},
-    {COMD_SM, 30, 6, 1},
-    {COMD_SM, 35, 7, 0},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 90, 53, -10},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 40, -8, 0},
-    {COMD_SM, 35, -7, -1},
-    {COMD_SM, 32, -6, -2},
-    {COMD_SM, 29, -5, -3},
-    {COMD_SM, 21, -3, -3},
-    {COMD_SM, 21, -3, -3},
-    {COMD_SM, 21, -1, -4},
-    {COMD_SM, 21, -1, -4},
-    {COMD_SM, 21, 1, -4},
-    {COMD_SM, 21, 1, -4},
-    {COMD_SM, 21, 3, -3},
-    {COMD_SM, 25, 3, -4},
-    {COMD_SM, 27, 5, -2},
-    {COMD_SM, 32, 6, -2},
-    {COMD_SM, 30, 6, -1},
-    {COMD_SM, 40, 8, 0},
-    {COMD_SM, 40, 8, 0},
-    {COMD_SM, 30, 6, 1},
-    {COMD_SM, 32, 6, 2},
-    {COMD_SM, 29, 5, 3},
-    {COMD_SM, 21, 3, 3},
-    {COMD_SM, 21, 3, 3},
-    {COMD_SM, 21, 1, 4},
-    {COMD_SM, 21, 1, 4},
-    {COMD_SM, 21, -1, 4},
-    {COMD_SM, 21, -1, 4},
-    {COMD_SM, 21, -3, 3},
-    {COMD_SM, 21, -3, 3},
-    {COMD_SM, 29, -5, 3},
-    {COMD_SM, 27, -5, 2},
-    {COMD_SM, 35, -7, 1},
-    {COMD_SM, 35, -7, 0},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 145, -53, -69},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 62, -3, -12},
-    {COMD_SM, 25, -5, -1},
-    {COMD_SM, 25, -4, -3},
-    {COMD_SM, 34, -3, -6},
-    {COMD_SM, 36, -2, -7},
-    {COMD_SM, 41, 2, -8},
-    {COMD_SM, 29, 3, -5},
-    {COMD_SM, 32, 5, -4},
-    {COMD_SM, 34, 6, -3},
-    {COMD_SM, 35, 7, 0},
-    {COMD_SM, 65, 13, -1},
-    {COMD_SM, 39, -6, 5},
-    {COMD_SM, 29, -3, 5},
-    {COMD_SM, 27, -2, 5},
-    {COMD_SM, 30, -1, 6},
-    {COMD_SM, 35, 1, 7},
-    {COMD_SM, 32, 2, 6},
-    {COMD_SM, 36, 4, 6},
-    {COMD_SM, 36, 6, 4},
-    {COMD_SM, 40, 7, 4},
-    {COMD_SM, 43, 8, 3},
-    {COMD_SM, 40, 8, 1},
-    {COMD_SM, 45, 9, 1},
-    {COMD_SM, 60, 12, -1},
-    {COMD_SM, 57, 11, -3},
-    {COMD_SM, 56, 10, -5},
-    {COMD_SM, 46, 7, -6},
-    {COMD_SM, 22, 2, -4},
-    {COMD_SM, 22, 2, -4},
-    {COMD_SM, 21, 1, -4},
-    {COMD_SM, 25, 0, -5},
-    {COMD_SM, 30, 0, -6},
-    {COMD_SM, 34, -3, -6},
-    {COMD_SM, 32, -4, -5},
-    {COMD_SM, 35, -5, -5},
-    {COMD_SM, 50, 10, 0},
-    {COMD_SM, 55, 0, -11},
-    {COMD_SM, 380, -76, 0},
-    {COMD_SM, 90, -18, 1},
-    {COMD_SM, 30, -6, 1},
-    {COMD_SM, 25, -5, 1},
-    {COMD_SM, 47, -8, 5},
-    {COMD_SM, 42, -6, 6},
-    {COMD_SM, 49, -4, 9},
-    {COMD_SM, 50, -1, 10},
-    {COMD_SM, 30, 1, 6},
-    {COMD_SM, 30, 1, 6},
-    {COMD_SM, 27, 2, 5},
-    {COMD_SM, 25, 3, 4},
-    {COMD_SM, 28, 4, 4},
-    {COMD_SM, 27, 5, 2},
-    {COMD_SM, 32, 6, 2},
-    {COMD_SM, 35, 7, 0},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 90, 53, -10},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 40, -8, 0},
-    {COMD_SM, 36, -7, -2},
-    {COMD_SM, 30, -6, -1},
-    {COMD_SM, 29, -5, -3},
-    {COMD_SM, 21, -3, -3},
-    {COMD_SM, 21, -3, -3},
-    {COMD_SM, 21, -1, -4},
-    {COMD_SM, 21, -1, -4},
-    {COMD_SM, 21, 1, -4},
-    {COMD_SM, 21, 1, -4},
-    {COMD_SM, 25, 3, -4},
-    {COMD_SM, 21, 3, -3},
-    {COMD_SM, 27, 5, -2},
-    {COMD_SM, 32, 6, -2},
-    {COMD_SM, 30, 6, -1},
-    {COMD_SM, 40, 8, -1},
-    {COMD_SM, 40, 8, 1},
-    {COMD_SM, 30, 6, 1},
-    {COMD_SM, 32, 6, 2},
-    {COMD_SM, 27, 5, 2},
-    {COMD_SM, 25, 3, 4},
-    {COMD_SM, 21, 3, 3},
-    {COMD_SM, 21, 1, 4},
-    {COMD_SM, 21, 1, 4},
-    {COMD_SM, 21, -1, 4},
-    {COMD_SM, 21, -1, 4},
-    {COMD_SM, 21, -3, 3},
-    {COMD_SM, 21, -3, 3},
-    {COMD_SM, 29, -5, 3},
-    {COMD_SM, 25, -5, 1},
-    {COMD_SM, 36, -7, 2},
-    {COMD_SM, 35, -7, 0},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 111, -9, -66},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 75, 15, 0},
-    {COMD_SM, 195, 0, -39},
-    {COMD_SM, 75, -15, 0},
-    {COMD_SM, 195, 0, 39},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 123, -37, -64},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 55, 0, 11},
-    {COMD_SM, 610, 122, 0},
-    {COMD_SM, 60, 0, -12},
-    {COMD_SM, 220, -44, 0},
-    {COMD_SM, 36, 6, -4},
-    {COMD_SM, 29, 3, -5},
-    {COMD_SM, 29, 3, -5},
-    {COMD_SM, 30, 0, -6},
-    {COMD_SM, 35, 0, -7},
-    {COMD_SM, 34, -3, -6},
-    {COMD_SM, 36, -4, -6},
-    {COMD_SM, 32, -5, -4},
-    {COMD_SM, 40, -7, -4},
-    {COMD_SM, 41, -8, -2},
-    {COMD_SM, 41, -8, -2},
-    {COMD_SM, 45, -9, -1},
-    {COMD_SM, 55, -11, 1},
-    {COMD_SM, 51, -10, 2},
-    {COMD_SM, 43, -8, 3},
-    {COMD_SM, 40, -7, 4},
-    {COMD_SM, 35, -5, 5},
-    {COMD_SM, 32, -4, 5},
-    {COMD_SM, 32, -2, 6},
-    {COMD_SM, 30, -1, 6},
-    {COMD_SM, 30, 1, 6},
-    {COMD_SM, 32, 2, 6},
-    {COMD_SM, 32, 4, 5},
-    {COMD_SM, 36, 6, 4},
-    {COMD_SM, 55, -11, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 75, 45, 0},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 70, -14, -1},
-    {COMD_SM, 47, -9, -3},
-    {COMD_SM, 29, -5, -3},
-    {COMD_SM, 28, -4, -4},
-    {COMD_SM, 22, -2, -4},
-    {COMD_SM, 25, -1, -5},
-    {COMD_SM, 21, 1, -4},
-    {COMD_SM, 16, 1, -3},
-    {COMD_SM, 25, 3, -4},
-    {COMD_SM, 25, 4, -3},
-    {COMD_SM, 27, 5, -2},
-    {COMD_SM, 27, 5, -2},
-    {COMD_SM, 35, 7, -1},
-    {COMD_SM, 40, 8, -1},
-    {COMD_SM, 40, 8, 1},
-    {COMD_SM, 35, 7, 1},
-    {COMD_SM, 30, 6, 1},
-    {COMD_SM, 29, 5, 3},
-    {COMD_SM, 21, 3, 3},
-    {COMD_SM, 21, 3, 3},
-    {COMD_SM, 22, 2, 4},
-    {COMD_SM, 20, 0, 4},
-    {COMD_SM, 20, 0, 4},
-    {COMD_SM, 18, -2, 3},
-    {COMD_SM, 25, -3, 4},
-    {COMD_SM, 21, -3, 3},
-    {COMD_SM, 29, -5, 3},
-    {COMD_SM, 30, -6, 1},
-    {COMD_SM, 36, -7, 2},
-    {COMD_SM, 35, -7, 0},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 105, -1, -63},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 60, 12, -1},
-    {COMD_SM, 51, 10, -2},
-    {COMD_SM, 45, 8, -4},
-    {COMD_SM, 43, 7, -5},
-    {COMD_SM, 32, 4, -5},
-    {COMD_SM, 29, 3, -5},
-    {COMD_SM, 32, 2, -6},
-    {COMD_SM, 35, 0, -7},
-    {COMD_SM, 35, 0, -7},
-    {COMD_SM, 38, -3, -7},
-    {COMD_SM, 29, -3, -5},
-    {COMD_SM, 42, -6, -6},
-    {COMD_SM, 36, -6, -4},
-    {COMD_SM, 43, -8, -3},
-    {COMD_SM, 46, -9, -2},
-    {COMD_SM, 50, -10, 0},
-    {COMD_SM, 75, -15, 1},
-    {COMD_SM, 30, -6, 1},
-    {COMD_SM, 27, -5, 2},
-    {COMD_SM, 51, -9, 5},
-    {COMD_SM, 49, -7, 7},
-    {COMD_SM, 49, -4, 9},
-    {COMD_SM, 45, -1, 9},
-    {COMD_SM, 40, 1, 8},
-    {COMD_SM, 32, 2, 6},
-    {COMD_SM, 36, 4, 6},
-    {COMD_SM, 35, 5, 5},
-    {COMD_SM, 36, 6, 4},
-    {COMD_SM, 43, 8, 3},
-    {COMD_SM, 51, 10, 2},
-    {COMD_SM, 50, 10, 1},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 22, 0, -13},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 40, -8, 0},
-    {COMD_SM, 36, -7, -2},
-    {COMD_SM, 30, -6, -1},
-    {COMD_SM, 25, -4, -3},
-    {COMD_SM, 25, -4, -3},
-    {COMD_SM, 25, -3, -4},
-    {COMD_SM, 21, -1, -4},
-    {COMD_SM, 25, -1, -5},
-    {COMD_SM, 21, 1, -4},
-    {COMD_SM, 21, 1, -4},
-    {COMD_SM, 25, 3, -4},
-    {COMD_SM, 25, 4, -3},
-    {COMD_SM, 29, 5, -3},
-    {COMD_SM, 27, 5, -2},
-    {COMD_SM, 40, 8, -1},
-    {COMD_SM, 40, 8, 0},
-    {COMD_SM, 35, 7, 0},
-    {COMD_SM, 35, 7, 1},
-    {COMD_SM, 32, 6, 2},
-    {COMD_SM, 29, 5, 3},
-    {COMD_SM, 21, 3, 3},
-    {COMD_SM, 25, 3, 4},
-    {COMD_SM, 21, 1, 4},
-    {COMD_SM, 21, 1, 4},
-    {COMD_SM, 25, -1, 5},
-    {COMD_SM, 21, -1, 4},
-    {COMD_SM, 25, -3, 4},
-    {COMD_SM, 21, -3, 3},
-    {COMD_SM, 29, -5, 3},
-    {COMD_SM, 30, -6, 1},
-    {COMD_SM, 36, -7, 2},
-    {COMD_SM, 40, -8, 0},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 171, -31, -98},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 66, -13, -2},
-    {COMD_SM, 45, -1, 9},
-    {COMD_SM, 30, 0, 6},
-    {COMD_SM, 27, 2, 5},
-    {COMD_SM, 21, 3, 3},
-    {COMD_SM, 22, 4, 2},
-    {COMD_SM, 35, 7, 1},
-    {COMD_SM, 55, 11, 1},
-    {COMD_SM, 255, 51, 0},
-    {COMD_SM, 45, 0, 9},
-    {COMD_SM, 55, 11, 0},
-    {COMD_SM, 45, 0, -9},
-    {COMD_SM, 110, 22, 0},
-    {COMD_SM, 79, 9, -13},
-    {COMD_SM, 155, -31, 0},
-    {COMD_SM, 60, 0, -12},
-    {COMD_SM, 55, -11, 0},
-    {COMD_SM, 60, 0, 12},
-    {COMD_SM, 260, -52, 0},
-    {COMD_SM, 40, -8, 0},
-    {COMD_SM, 21, -3, -3},
-    {COMD_SM, 21, -1, -4},
-    {COMD_SM, 25, 0, -5},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 34, -13, -16},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 85, 17, 0},
-    {COMD_SM, 70, 0, -14},
-    {COMD_SM, 85, -17, 0},
-    {COMD_SM, 70, 0, 14},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 150, 32, -84},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 61, -2, -12},
-    {COMD_SM, 35, -7, 1},
-    {COMD_SM, 32, -6, 2},
-    {COMD_SM, 34, -6, 3},
-    {COMD_SM, 28, -4, 4},
-    {COMD_SM, 28, -4, 4},
-    {COMD_SM, 29, -3, 5},
-    {COMD_SM, 32, -2, 6},
-    {COMD_SM, 25, 0, 5},
-    {COMD_SM, 40, 1, 8},
-    {COMD_SM, 32, 2, 6},
-    {COMD_SM, 36, 4, 6},
-    {COMD_SM, 35, 5, 5},
-    {COMD_SM, 36, 6, 4},
-    {COMD_SM, 43, 8, 3},
-    {COMD_SM, 45, 9, 1},
-    {COMD_SM, 55, 11, 1},
-    {COMD_SM, 65, 13, -1},
-    {COMD_SM, 62, 12, -3},
-    {COMD_SM, 27, 5, -2},
-    {COMD_SM, 25, 4, -3},
-    {COMD_SM, 25, 4, -3},
-    {COMD_SM, 25, 3, -4},
-    {COMD_SM, 45, 4, -8},
-    {COMD_SM, 50, 1, -10},
-    {COMD_SM, 25, 0, -5},
-    {COMD_SM, 30, -1, -6},
-    {COMD_SM, 25, -3, -4},
-    {COMD_SM, 25, -3, -4},
-    {COMD_SM, 28, -4, -4},
-    {COMD_SM, 29, -5, -3},
-    {COMD_SM, 27, -5, -2},
-    {COMD_SM, 35, -7, -1},
-    {COMD_SM, 61, -2, 12},
-    {COMD_SM, 41, 8, 2},
-    {COMD_SM, 36, 6, 4},
-    {COMD_SM, 29, 3, 5},
-    {COMD_SM, 30, 1, 6},
-    {COMD_SM, 20, 0, 4},
-    {COMD_SM, 22, -2, 4},
-    {COMD_SM, 25, -3, 4},
-    {COMD_SM, 21, -3, 3},
-    {COMD_SM, 29, -5, 3},
-    {COMD_SM, 32, -6, 2},
-    {COMD_SM, 35, -7, 1},
-    {COMD_SM, 40, -8, 0},
-    {COMD_SM, 40, -8, 0},
-    {COMD_SM, 35, -7, -1},
-    {COMD_SM, 32, -6, -2},
-    {COMD_SM, 29, -5, -3},
-    {COMD_SM, 21, -3, -3},
-    {COMD_SM, 21, -3, -3},
-    {COMD_SM, 21, -1, -4},
-    {COMD_SM, 21, -1, -4},
-    {COMD_SM, 36, 2, -7},
-    {COMD_SM, 36, 4, -6},
-    {COMD_SM, 18, 3, -2},
-    {COMD_SM, 22, 4, -2},
-    {COMD_SM, 46, 9, -2},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 36, 12, -18},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 60, 12, -1},
-    {COMD_SM, 51, 10, -2},
-    {COMD_SM, 45, 8, -4},
-    {COMD_SM, 43, 7, -5},
-    {COMD_SM, 32, 4, -5},
-    {COMD_SM, 29, 3, -5},
-    {COMD_SM, 32, 2, -6},
-    {COMD_SM, 35, 0, -7},
-    {COMD_SM, 35, 0, -7},
-    {COMD_SM, 38, -3, -7},
-    {COMD_SM, 34, -3, -6},
-    {COMD_SM, 39, -6, -5},
-    {COMD_SM, 36, -6, -4},
-    {COMD_SM, 43, -8, -3},
-    {COMD_SM, 46, -9, -2},
-    {COMD_SM, 50, -10, 0},
-    {COMD_SM, 75, -15, 1},
-    {COMD_SM, 30, -6, 1},
-    {COMD_SM, 27, -5, 2},
-    {COMD_SM, 51, -9, 5},
-    {COMD_SM, 49, -7, 7},
-    {COMD_SM, 49, -4, 9},
-    {COMD_SM, 45, -1, 9},
-    {COMD_SM, 35, 1, 7},
-    {COMD_SM, 36, 2, 7},
-    {COMD_SM, 36, 4, 6},
-    {COMD_SM, 35, 5, 5},
-    {COMD_SM, 36, 6, 4},
-    {COMD_SM, 43, 8, 3},
-    {COMD_SM, 51, 10, 2},
-    {COMD_SM, 50, 10, 1},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 22, 0, -13},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 40, -8, -1},
-    {COMD_SM, 35, -7, -1},
-    {COMD_SM, 32, -6, -2},
-    {COMD_SM, 22, -4, -2},
-    {COMD_SM, 28, -4, -4},
-    {COMD_SM, 21, -3, -3},
-    {COMD_SM, 21, -1, -4},
-    {COMD_SM, 25, -1, -5},
-    {COMD_SM, 21, 1, -4},
-    {COMD_SM, 21, 1, -4},
-    {COMD_SM, 25, 3, -4},
-    {COMD_SM, 25, 4, -3},
-    {COMD_SM, 29, 5, -3},
-    {COMD_SM, 27, 5, -2},
-    {COMD_SM, 40, 8, -1},
-    {COMD_SM, 40, 8, -1},
-    {COMD_SM, 35, 7, 1},
-    {COMD_SM, 35, 7, 1},
-    {COMD_SM, 32, 6, 2},
-    {COMD_SM, 29, 5, 3},
-    {COMD_SM, 21, 3, 3},
-    {COMD_SM, 25, 3, 4},
-    {COMD_SM, 21, 1, 4},
-    {COMD_SM, 21, 1, 4},
-    {COMD_SM, 25, -1, 5},
-    {COMD_SM, 21, -1, 4},
-    {COMD_SM, 21, -3, 3},
-    {COMD_SM, 25, -3, 4},
-    {COMD_SM, 27, -5, 2},
-    {COMD_SM, 32, -6, 2},
-    {COMD_SM, 35, -7, 1},
-    {COMD_SM, 40, -8, 1},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 139, -44, -71},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 440, 88, 0},
-    {COMD_SM, 55, 0, -11},
-    {COMD_SM, 60, -12, 0},
-    {COMD_SM, 36, 6, -4},
-    {COMD_SM, 36, 4, -6},
-    {COMD_SM, 34, 3, -6},
-    {COMD_SM, 35, 1, -7},
-    {COMD_SM, 35, -1, -7},
-    {COMD_SM, 34, -3, -6},
-    {COMD_SM, 35, -5, -5},
-    {COMD_SM, 32, -6, -2},
-    {COMD_SM, 43, 7, -5},
-    {COMD_SM, 39, 5, -6},
-    {COMD_SM, 32, 2, -6},
-    {COMD_SM, 30, 1, -6},
-    {COMD_SM, 25, 0, -5},
-    {COMD_SM, 25, -1, -5},
-    {COMD_SM, 25, -3, -4},
-    {COMD_SM, 21, -3, -3},
-    {COMD_SM, 25, -4, -3},
-    {COMD_SM, 27, -5, -2},
-    {COMD_SM, 30, -6, -1},
-    {COMD_SM, 35, -7, 0},
-    {COMD_SM, 305, -61, 0},
-    {COMD_SM, 60, 0, 12},
-    {COMD_SM, 280, 56, 0},
-    {COMD_SM, 35, 7, 1},
-    {COMD_SM, 30, 6, 1},
-    {COMD_SM, 16, 3, 1},
-    {COMD_SM, 21, 3, 3},
-    {COMD_SM, 22, 2, 4},
-    {COMD_SM, 20, 0, 4},
-    {COMD_SM, 15, 0, 3},
-    {COMD_SM, 21, -1, 4},
-    {COMD_SM, 18, -2, 3},
-    {COMD_SM, 18, -3, 2},
-    {COMD_SM, 21, -3, 3},
-    {COMD_SM, 25, -5, 1},
-    {COMD_SM, 61, -12, 2},
-    {COMD_SM, 255, -51, 0},
-    {COMD_SM, 60, 0, 12},
-    {COMD_SM, 285, 57, 0},
-    {COMD_SM, 45, 9, 1},
-    {COMD_SM, 32, 6, 2},
-    {COMD_SM, 18, 3, 2},
-    {COMD_SM, 11, 1, 2},
-    {COMD_SM, 30, 1, 6},
-    {COMD_SM, 25, 0, 5},
-    {COMD_SM, 29, -3, 5},
-    {COMD_SM, 28, -4, 4},
-    {COMD_SM, 32, -6, 2},
-    {COMD_SM, 41, -8, 2},
-    {COMD_SM, 50, -10, 0},
-    {COMD_SM, 230, -46, 0},
-    {COMD_SM, 65, 0, 13},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 1517, 203, -887},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 164, -11, -31},
-    {COMD_SM, 161, -9, -31},
-    {COMD_SM, 290, -15, -56},
-    {COMD_SM, 261, -11, -51},
-    {COMD_SM, 218, -7, -43},
-    {COMD_SM, 177, -5, -35},
-    {COMD_SM, 135, -2, -27},
-    {COMD_SM, 110, -2, -22},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 504, 62, 296},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 640, -128, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 524, 236, -208},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 171, -9, 33},
-    {COMD_SM, 149, -10, 28},
-    {COMD_SM, 150, -11, 28},
-    {COMD_SM, 157, -12, 29},
-    {COMD_SM, 192, -16, 35},
-    {COMD_SM, 206, -20, 36},
-    {COMD_SM, 99, -10, 17},
-    {COMD_SM, 97, -11, 16},
-    {COMD_SM, 100, -12, 16},
-    {COMD_SM, 96, -12, 15},
-    {COMD_SM, 42, -6, 6},
-    {COMD_SM, 39, -6, 5},
-    {COMD_SM, 36, -6, 4},
-    {COMD_SM, 32, -6, 2},
-    {COMD_SM, 32, -6, 2},
-    {COMD_SM, 30, -6, 0},
-    {COMD_SM, 60, -12, 0},
-    {COMD_SM, 61, -12, -2},
-    {COMD_SM, 66, -13, -2},
-    {COMD_SM, 66, -13, -2},
-    {COMD_SM, 70, -14, 0},
-    {COMD_SM, 55, -11, 0},
-    {COMD_SM, 45, -9, -1},
-    {COMD_SM, 43, -8, -3},
-    {COMD_SM, 32, -5, -4},
-    {COMD_SM, 14, -2, -2},
-    {COMD_SM, 15, 0, -3},
-    {COMD_SM, 16, -1, -3},
-    {COMD_SM, 21, 1, -4},
-    {COMD_SM, 45, 4, -8},
-    {COMD_SM, 64, 8, -10},
-    {COMD_SM, 32, 4, -5},
-    {COMD_SM, 36, 2, -7},
-    {COMD_SM, 46, 2, -9},
-    {COMD_SM, 45, 0, -9},
-    {COMD_SM, 45, -1, -9},
-    {COMD_SM, 46, -2, -9},
-    {COMD_SM, 40, -4, -7},
-    {COMD_SM, 39, -5, -6},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 670, 255, -311},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 30, 6, 0},
-    {COMD_SM, 21, 4, 1},
-    {COMD_SM, 18, 3, 2},
-    {COMD_SM, 22, 2, 4},
-    {COMD_SM, 27, 2, 5},
-    {COMD_SM, 25, 1, 5},
-    {COMD_SM, 70, -1, 14},
-    {COMD_SM, 76, -2, 15},
-    {COMD_SM, 76, -3, 15},
-    {COMD_SM, 142, -5, 28},
-    {COMD_SM, 143, -6, 28},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 553, -279, 180},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 93, -18, -5},
-    {COMD_SM, 71, -14, -2},
-    {COMD_SM, 55, -11, 0},
-    {COMD_SM, 47, -9, 3},
-    {COMD_SM, 39, -6, 5},
-    {COMD_SM, 39, -5, 6},
-    {COMD_SM, 38, -3, 7},
-    {COMD_SM, 46, -2, 9},
-    {COMD_SM, 86, -3, 17},
-    {COMD_SM, 45, -1, 9},
-    {COMD_SM, 41, -2, 8},
-    {COMD_SM, 38, -3, 7},
-    {COMD_SM, 32, -4, 5},
-    {COMD_SM, 36, -6, 4},
-    {COMD_SM, 40, -8, 1},
-    {COMD_SM, 394, -17, -77},
-    {COMD_SM, 30, 0, -6},
-    {COMD_SM, 25, 1, -5},
-    {COMD_SM, 54, 4, -10},
-    {COMD_SM, 58, 6, -10},
-    {COMD_SM, 54, 6, -9},
-    {COMD_SM, 96, 12, -15},
-    {COMD_SM, 40, 4, -7},
-    {COMD_SM, 32, 2, -6},
-    {COMD_SM, 11, -1, -2},
-    {COMD_SM, 16, -1, -3},
-    {COMD_SM, 46, -7, -6},
-    {COMD_SM, 138, -21, -18},
-    {COMD_SM, 75, -12, -9},
-    {COMD_SM, 74, -10, -11},
-    {COMD_SM, 67, -9, -10},
-    {COMD_SM, 29, -3, -5},
-    {COMD_SM, 27, -2, -5},
-    {COMD_SM, 331, -13, -65},
-    {COMD_SM, 260, -10, -51},
-    {COMD_SM, 25, 5, 0},
-    {COMD_SM, 25, 5, 1},
-    {COMD_SM, 22, 4, 2},
-    {COMD_SM, 22, 4, 2},
-    {COMD_SM, 53, 7, 8},
-    {COMD_SM, 58, 6, 10},
-    {COMD_SM, 148, 12, 27},
-    {COMD_SM, 94, 8, 17},
-    {COMD_SM, 96, 9, 17},
-    {COMD_SM, 29, 3, 5},
-    {COMD_SM, 28, 4, 4},
-    {COMD_SM, 68, 11, 8},
-    {COMD_SM, 74, 13, 7},
-    {COMD_SM, 74, 14, 5},
-    {COMD_SM, 71, 14, 2},
-    {COMD_SM, 35, 7, 0},
-    {COMD_SM, 35, 7, -1},
-    {COMD_SM, 32, 6, -2},
-    {COMD_SM, 29, 5, -3},
-    {COMD_SM, 32, 5, -4},
-    {COMD_SM, 36, 4, -6},
-    {COMD_SM, 49, 4, -9},
-    {COMD_SM, 62, 3, -12},
-    {COMD_SM, 65, 1, -13},
-    {COMD_SM, 70, 0, -14},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 10, 6, 0},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 102, 20, 4},
-    {COMD_SM, 81, 16, 2},
-    {COMD_SM, 60, 12, 0},
-    {COMD_SM, 51, 10, -2},
-    {COMD_SM, 45, 8, -4},
-    {COMD_SM, 50, 8, -6},
-    {COMD_SM, 53, 8, -7},
-    {COMD_SM, 67, 9, -10},
-    {COMD_SM, 78, 10, -12},
-    {COMD_SM, 78, 10, -12},
-    {COMD_SM, 158, 18, -26},
-    {COMD_SM, 312, 33, -53},
-    {COMD_SM, 85, 8, -15},
-    {COMD_SM, 92, 9, -16},
-    {COMD_SM, 190, 15, -35},
-    {COMD_SM, 191, 13, -36},
-    {COMD_SM, 177, 10, -34},
-    {COMD_SM, 247, 12, -48},
-    {COMD_SM, 245, 10, -48},
-    {COMD_SM, 90, 1, -18},
-    {COMD_SM, 30, -1, -6},
-    {COMD_SM, 21, -1, -4},
-    {COMD_SM, 18, -2, -3},
-    {COMD_SM, 18, -3, -2},
-    {COMD_SM, 16, -3, -1},
-    {COMD_SM, 16, -3, 1},
-    {COMD_SM, 46, -9, 2},
-    {COMD_SM, 47, -9, 3},
-    {COMD_SM, 57, -11, 3},
-    {COMD_SM, 50, -10, 1},
-    {COMD_SM, 50, -10, 0},
-    {COMD_SM, 46, -9, 2},
-    {COMD_SM, 49, -9, 4},
-    {COMD_SM, 54, -9, 6},
-    {COMD_SM, 57, -9, 7},
-    {COMD_SM, 60, -8, 9},
-    {COMD_SM, 67, -9, 10},
-    {COMD_SM, 68, -8, 11},
-    {COMD_SM, 137, -15, 23},
-    {COMD_SM, 146, -15, 25},
-    {COMD_SM, 139, -14, 24},
-    {COMD_SM, 128, -13, 22},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 411, -60, 239},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 95, -19, 0},
-    {COMD_SM, 81, -16, -2},
-    {COMD_SM, 61, -12, -2},
-    {COMD_SM, 49, -9, -4},
-    {COMD_SM, 21, -3, -3},
-    {COMD_SM, 21, -3, -3},
-    {COMD_SM, 22, -2, -4},
-    {COMD_SM, 21, -1, -4},
-    {COMD_SM, 60, -1, -12},
-    {COMD_SM, 76, 2, -15},
-    {COMD_SM, 86, 3, -17},
-    {COMD_SM, 97, 4, -19},
-    {COMD_SM, 98, 5, -19},
-    {COMD_SM, 101, 7, -19},
-    {COMD_SM, 101, 9, -18},
-    {COMD_SM, 50, 6, -8},
-    {COMD_SM, 50, 6, -8},
-    {COMD_SM, 53, 7, -8},
-    {COMD_SM, 49, 7, -7},
-    {COMD_SM, 50, 8, -6},
-    {COMD_SM, 51, 9, -5},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 29, -15, 9},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 255, -10, -50},
-    {COMD_SM, 342, -14, -67},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 646, 317, 223},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 147, -9, -28},
-    {COMD_SM, 130, -7, -25},
-    {COMD_SM, 263, -13, -51},
-    {COMD_SM, 159, -7, -31},
-    {COMD_SM, 197, -6, -39},
-    {COMD_SM, 212, -6, -42},
-    {COMD_SM, 221, -4, -44},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 399, -9, 239},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 127, 11, -23},
-    {COMD_SM, 70, -14, -1},
-    {COMD_SM, 125, -10, 23},
-    {COMD_SM, 65, 13, 1},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 23, -14, 0},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 106, -3, -21},
-    {COMD_SM, 114, 9, -21},
-    {COMD_SM, 93, 5, 18},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 39, -12, 20},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 335, -67, -1},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 110, 64, -17},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 265, -53, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 111, 63, -21},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 250, -50, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 121, 58, 44},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 754, 29, 148},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 260, -43, -150},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 759, 29, 149},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 285, -4, -171},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 703, 27, 138},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 43, 2, 26},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 40, -1, 8},
-    {COMD_SM, 36, -2, 7},
-    {COMD_SM, 7, -1, 1},
-    {COMD_SM, 7, -1, 1},
-    {COMD_SM, 14, -2, -2},
-    {COMD_SM, 40, -4, -7},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 24, -14, -2},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 36, 2, 7},
-    {COMD_SM, 21, 3, 3},
-    {COMD_SM, 11, 2, 1},
-    {COMD_SM, 65, 13, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 239, -134, 51},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 38, 7, -3},
-    {COMD_SM, 38, 7, -3},
-    {COMD_SM, 50, 8, -6},
-    {COMD_SM, 46, 7, -6},
-    {COMD_SM, 53, 7, -8},
-    {COMD_SM, 54, 6, -9},
-    {COMD_SM, 54, 6, -9},
-    {COMD_SM, 58, 6, -10},
-    {COMD_SM, 56, 5, -10},
-    {COMD_SM, 59, 4, -11},
-    {COMD_SM, 57, 3, -11},
-    {COMD_SM, 51, 2, -10},
-    {COMD_SM, 55, 1, -11},
-    {COMD_SM, 45, 0, -9},
-    {COMD_SM, 50, -1, -10},
-    {COMD_SM, 45, -4, -8},
-    {COMD_SM, 38, -3, -7},
-    {COMD_SM, 35, -5, -5},
-    {COMD_SM, 29, -5, -3},
-    {COMD_SM, 34, -6, -3},
-    {COMD_SM, 30, -6, -1},
-    {COMD_SM, 30, -6, -1},
-    {COMD_SM, 30, -6, 1},
-    {COMD_SM, 35, -7, 1},
-    {COMD_SM, 63, -12, 4},
-    {COMD_SM, 67, -12, 6},
-    {COMD_SM, 57, -9, 7},
-    {COMD_SM, 53, -8, 7},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 243, 133, 60},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 214, -41, -12},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 64, 37, -11},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 193, -37, 11},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 107, 63, 12},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 320, 64, 0},
-    {COMD_SM, 310, 62, 0},
-    {COMD_SM, 630, 126, -3},
-    {COMD_SM, 76, 15, -2},
-    {COMD_SM, 45, 9, -1},
-    {COMD_SM, 16, 3, -1},
-    {COMD_SM, 11, 1, -2},
-    {COMD_SM, 16, 1, -3},
-    {COMD_SM, 25, 0, -5},
-    {COMD_SM, 40, -1, -8},
-    {COMD_SM, 11, -1, -2},
-    {COMD_SM, 11, -2, -1},
-    {COMD_SM, 45, -9, -1},
-    {COMD_SM, 80, -16, -1},
-    {COMD_SM, 635, -127, 1},
-    {COMD_SM, 315, -63, 1},
-    {COMD_SM, 320, -64, 3},
-    {COMD_SM, 11, -2, 1},
-    {COMD_SM, 14, -2, 2},
-    {COMD_SM, 21, -1, 4},
-    {COMD_SM, 25, 0, 5},
-    {COMD_SM, 25, 1, 5},
-    {COMD_SM, 21, 1, 4},
-    {COMD_SM, 18, 2, 3},
-    {COMD_SM, 16, 3, 1},
-    {COMD_SM, 0, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 71, 21, -37},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 186, -17, -33},
-    {COMD_SM, 89, -8, -16},
-    {COMD_SM, 94, -8, -17},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 109, -21, -62},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 98, -5, -19},
-    {COMD_SM, 96, -2, -19},
-    {COMD_SM, 96, -2, -19},
-    {COMD_SM, 95, -1, -19},
-    {COMD_SM, 195, 1, -39},
-    {COMD_SM, 185, 1, -37},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 347, 67, 197},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 200, -40, -1},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 592, -277, -222},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 40, 8, 1},
-    {COMD_SM, 38, 7, 3},
-    {COMD_SM, 39, 6, 5},
-    {COMD_SM, 35, 5, 5},
-    {COMD_SM, 85, 8, 15},
-    {COMD_SM, 98, 8, 18},
-    {COMD_SM, 182, 13, 34},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 498, 86, 286},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 268, -24, 48},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 84, 33, -38},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 255, -22, 46},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 155, -76, -54},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 273, -26, 48},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 236, 138, 31},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 284, -23, 52},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 124, -26, -70},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 450, -90, 1},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 156, 92, -16},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 455, -91, 2},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 230, 104, 91},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 445, -89, 1},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 148, 89, -1},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 396, -14, -78},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 124, 25, 70},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 391, -14, -77},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 203, -86, 86},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 398, -16, -78},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 221, 116, -64},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 445, -89, 1},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 155, 75, 55},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 65, -11, 7},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 23, 0, -14},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 70, -1, 14},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 25, 1, -15},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 68, 11, 8},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 182, -109, 1},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 53, 7, 8},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 27, 2, -16},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 57, -9, 7},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 242, 123, 77},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 68, -11, 8},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 160, -96, -7},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 394, -17, -77},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 92, 26, -49},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 275, -25, 49},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 109, 34, -56},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 57, -9, 7},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 164, 98, -7},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 78, 7, 14},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 212, -122, 36},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 65, 0, 13},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 119, 8, 71},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 49, 7, 7},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 579, 98, -333},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 337, -14, -66},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 107, 25, 59},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 331, -13, -65},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 69, 35, 22},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 331, -13, -65},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 253, -98, 116},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 341, -13, -67},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 24, 3, -14},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 251, 26, -43},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 123, 48, 56},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 385, -77, 1},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 134, 79, -14},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 380, -76, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 127, 76, 0},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 244, 23, -43},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 86, -13, 50},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 237, 22, -42},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 196, -20, 116},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 385, -77, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 253, 88, -124},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 365, -73, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 228, 73, 116},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 237, 22, -42},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 91, -45, -31},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 61, 10, 7},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 22, -12, 6},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 67, 12, -6},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 23, -12, 7},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 71, 2, -14},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 133, -79, 13},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 62, 3, -12},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 127, 4, 76},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 336, -13, -66},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 2, 0, -1},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 67, 9, -10},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 22, -9, 10},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 36, 6, 4},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 13, -6, -5},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 258, 27, -44},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 2, 0, -1},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 53, 8, -7},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 203, -21, 120},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 32, 5, 4},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 130, 78, 0},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 65, 11, -7},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 195, 1, -117},
-    {COMD_SP, 0, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 57, 8, 8},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SM, 3759, 50, 2255},
-    {COMD_SP, 1, 0, 0},
-    {COMD_SM, 50, 0, 0},
-    {COMD_SP, 1, 0, 0},
-    {COMD_END, 0, 0, 0},
-};
+    LED2_OFF = 0,
+    LED2_ON,
+    LED2_FAST_BLINK,
+    LED2_SLOW_BLINK,
+    LED2_SHORT_PIP
+} DemoLED2StateType;
+
+/* Main state variable for demo module state. */
+DemoStateType demo_state;
+/* LED2 state machine state variable. */
+DemoLED2StateType demo_led2_state;
+/* Current read or write position in Flash */
+UINT16 FlashAddr;
+    
+void EBBWriteBytesFlash(unsigned int num_bytes, unsigned char *flash_array, BOOL finish_up, BOOL starting_up);
+
+
+/* This function erases the section of Flash that we have set aside for
+* storing our image data. Note that this involves saving off and restoring
+* the config bits at the last eight bytes of Flash. */
+void erase_path_flash(void)
+{
+    UINT8 config_bits[CONFIG_LENGTH_BYTES];
+    
+    // Read out config bits before we erase
+    ReadFlash(CONFIG_START_ADDR, CONFIG_LENGTH_BYTES, config_bits);
+    
+    // Erase our whole block for the path flash
+    EraseFlash(PF_START_ADDR, PF_END_ADDR);
+    
+    // Restore config bits
+    WriteBytesFlash(CONFIG_START_ADDR, CONFIG_LENGTH_BYTES, config_bits);
+}
+
+void dump_flash(void)
+{
+    UINT8 array[32];
+    UINT16 ReadAddr = PF_START_ADDR;
+    UINT8 i;
+    
+    printf ((far rom char *)"Dumping Flash:\r\n");
+    for (i=0; i < 4; i++)
+    {
+        ReadFlash(ReadAddr, 32, array);
+        printf((far rom char *)"%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\r\n",
+                array[0],
+                array[1],
+                array[2],
+                array[3],
+                array[4],
+                array[5],
+                array[6],
+                array[7],
+                array[8],
+                array[9],
+                array[10],
+                array[11],
+                array[12],
+                array[13],
+                array[14],
+                array[15],
+                array[16],
+                array[17],
+                array[18],
+                array[19],
+                array[20],
+                array[21],
+                array[22],
+                array[23],
+                array[24],
+                array[25],
+                array[26],
+                array[27],
+                array[28],
+                array[29],
+                array[30],
+                array[31]
+        );
+        ReadAddr += 32;
+    }  
+}
+
+/* Write a simple path into flash. */
+void write_simple_path_flash(void)
+{   
+    UINT8 Array[0x10];
+    
+    // Store a set of settings
+    dump_flash();
+
+    // Always start of initializing the flash write routine 
+    EBBWriteBytesFlash(0, NULL, FALSE, TRUE);
+    
+    // And a couple very long moves
+    Array[0] = DEMO_COMMAND_VERY_LONG_MOVE;
+    Array[1] = 0x01;
+    Array[2] = 0xD4;
+    Array[3] = 0xC0;    // 120,000
+    Array[4] = 0x01;
+    Array[5] = 0x86;
+    Array[6] = 0xA0;    // 100,000
+    Array[7] = 0xFE;
+    Array[8] = 0x79;
+    Array[9] = 0x60;    // -100,000
+    EBBWriteBytesFlash(DEMO_COMMAND_VERY_LONG_MOVE_LENGTH, Array, FALSE, FALSE);
+
+    // Do a couple short moves
+    Array[0] = 0xC8;
+    Array[1] = 0xC8;
+    Array[2] = 0x7F;
+    EBBWriteBytesFlash(DEMO_COMMAND_SHORT_MOVE_LENGTH, Array, FALSE, FALSE); 
+    
+    // The a couple long moves
+    Array[0] = DEMO_COMMAND_LONG_MOVE;
+    Array[1] = 0x03;
+    Array[2] = 0xE8;
+    Array[3] = 0x03;
+    Array[4] = 0xE8;
+    Array[5] = 0x03;
+    Array[6] = 0xE8;
+    EBBWriteBytesFlash(DEMO_COMMAND_LONG_MOVE_LENGTH, Array, FALSE, FALSE); 
+
+    Array[0] = DEMO_COMMAND_LONG_MOVE;
+    Array[1] = 0x07;
+    Array[2] = 0xD0;
+    Array[3] = 0x0F;
+    Array[4] = 0xA0;
+    Array[5] = 0xF0;
+    Array[6] = 0x60;
+    EBBWriteBytesFlash(DEMO_COMMAND_LONG_MOVE_LENGTH, Array, FALSE, FALSE); 
+    
+    // Put the pen down
+    Array[0] = DEMO_COMMAND_PEN_DOWN;
+    EBBWriteBytesFlash(DEMO_COMMAND_PEN_DOWN_LENGTH, Array, FALSE, FALSE); 
+    
+    // Do a long delay
+    Array[0] = DEMO_COMMAND_LONG_DELAY;
+    Array[1] = 0x13;
+    Array[2] = 0x88;
+    EBBWriteBytesFlash(DEMO_COMMAND_LONG_DELAY_LENGTH, Array, FALSE, FALSE); 
+
+    // Then do a long move
+    Array[0] = DEMO_COMMAND_LONG_MOVE;
+    Array[1] = 0x07;
+    Array[2] = 0xD0;
+    Array[3] = 0x0F;
+    Array[4] = 0xA0;
+    Array[5] = 0xF0;
+    Array[6] = 0x60;
+    EBBWriteBytesFlash(DEMO_COMMAND_LONG_MOVE_LENGTH, Array, FALSE, FALSE); 
+            
+    // Put the pen up
+    Array[0] = DEMO_COMMAND_PEN_UP;
+    EBBWriteBytesFlash(DEMO_COMMAND_PEN_UP_LENGTH, Array, FALSE, FALSE); 
+
+    // Do a long delay
+    Array[0] = DEMO_COMMAND_LONG_DELAY;
+    Array[1] = 0x13;
+    Array[2] = 0x88;
+    EBBWriteBytesFlash(DEMO_COMMAND_LONG_DELAY_LENGTH, Array, FALSE, FALSE); 
+    
+    // Then do a short move
+    Array[0] = 0xC8;
+    Array[1] = 0x50;
+    Array[2] = 0xA0;
+    EBBWriteBytesFlash(DEMO_COMMAND_SHORT_MOVE_LENGTH, Array, FALSE, FALSE); 
+    
+    // Do a short delay
+    Array[0] = DEMO_COMMAND_SHORT_DELAY;
+    Array[1] = 0xC8;
+    EBBWriteBytesFlash(DEMO_COMMAND_SHORT_DELAY_LENGTH, Array, FALSE, FALSE); 
+    
+    // Then do a short move
+    Array[0] = 0xC8;
+    Array[1] = 0x50;
+    Array[2] = 0xA0;
+    EBBWriteBytesFlash(DEMO_COMMAND_SHORT_MOVE_LENGTH, Array, FALSE, FALSE); 
+    
+    // Do a long delay
+    Array[0] = DEMO_COMMAND_LONG_DELAY;
+    Array[1] = 0x13;
+    Array[2] = 0x88;
+    EBBWriteBytesFlash(DEMO_COMMAND_LONG_DELAY_LENGTH, Array, FALSE, FALSE); 
+    
+    // Then do a short move
+    Array[0] = 0xC8;
+    Array[1] = 0x50;
+    Array[2] = 0xA0;
+    EBBWriteBytesFlash(DEMO_COMMAND_SHORT_MOVE_LENGTH, Array, FALSE, FALSE); 
+    
+    // And end
+    Array[0] = DEMO_COMMAND_END;
+    EBBWriteBytesFlash(DEMO_COMMAND_END_LENGTH, Array, FALSE, FALSE); 
+
+    // And finish writing to flash
+    EBBWriteBytesFlash(0, NULL, TRUE, FALSE); 
+}
+
+/* Restart playing at location zero. */
+void demo_play_init(void)
+{
+    // Start our address pointer at the beginning of our demo Flash
+    FlashAddr = PF_START_ADDR;
+}
+
+/* See if it's time for a new move/command and send it on it's way.*/
+void demo_play(void)
+{
+    UINT8 Command = 0;
+    UINT8 Array[0x10];
+    UINT32 Duration;
+    INT32 Step1;
+    INT32 Step2;
+    
+    // If there is room in the buffer
+    if (FIFOEmpty)
+    {
+        // Then load up the next command from Flash 
+        ReadFlash(FlashAddr, 1, &Command);
+        printf ((far rom char *)"CMD: 0x%02X Addr: 0x%04X\r\n", Command, FlashAddr);
+        
+        // Based on the Command, read out more bytes
+        switch (Command)
+        {
+            case DEMO_COMMAND_END:
+                demo_state = DEMO_IDLE;
+                demo_led2_state = LED2_OFF;
+                printf ((far rom char *)"Command: End\r\n");                
+                FlashAddr += DEMO_COMMAND_END_LENGTH;
+                break;
+            case DEMO_COMMAND_PEN_UP:
+                printf ((far rom char *)"Command: Pen Up\r\n");                
+        		process_SP(PEN_UP, 0);
+                FlashAddr += DEMO_COMMAND_PEN_UP_LENGTH;
+                break;
+            case DEMO_COMMAND_PEN_DOWN:
+                printf ((far rom char *)"Command: Pen Down\r\n");                
+        		process_SP(PEN_DOWN, 0);
+                FlashAddr += DEMO_COMMAND_PEN_DOWN_LENGTH;
+                break;
+            case DEMO_COMMAND_SHORT_DELAY:
+                printf ((far rom char *)"Command: Short Delay\r\n");                
+                ReadFlash(FlashAddr, DEMO_COMMAND_SHORT_DELAY_LENGTH, Array);
+                printf ((far rom char *)"%02X %02X %02X %02X %02X %02X %02X\r\n", Array[0], Array[1], Array[2], Array[3], Array[4], Array[5], Array[6]);
+                Duration = Array[1];
+                process_SM(Duration, 0, 0);
+                FlashAddr += DEMO_COMMAND_SHORT_DELAY_LENGTH;
+                break;
+            case DEMO_COMMAND_LONG_DELAY:
+                printf ((far rom char *)"Command: Long Delay\r\n");                
+                ReadFlash(FlashAddr, DEMO_COMMAND_LONG_DELAY_LENGTH, Array);
+                printf ((far rom char *)"%02X %02X %02X %02X %02X %02X %02X\r\n", Array[0], Array[1], Array[2], Array[3], Array[4], Array[5], Array[6]);
+                Duration = (((UINT32)Array[1]) << 8) + Array[2];
+                process_SM(Duration, 0, 0);
+                FlashAddr += DEMO_COMMAND_LONG_DELAY_LENGTH;
+                break;
+            case DEMO_COMMAND_STORE_TIMINGS:
+                printf ((far rom char *)"Command: Store Timings\r\n");                
+                ReadFlash(FlashAddr, DEMO_COMMAND_STORE_TIMINGS_LENGTH, Array);
+                printf ((far rom char *)"%02X %02X %02X %02X %02X %02X %02X\r\n", Array[0], Array[1], Array[2], Array[3], Array[4], Array[5], Array[6]);
+                FlashAddr += DEMO_COMMAND_STORE_TIMINGS_LENGTH;
+                break;
+            case DEMO_COMMAND_VERY_LONG_MOVE:
+                printf ((far rom char *)"Command: Very Long Move\r\n");                
+                ReadFlash(FlashAddr, DEMO_COMMAND_VERY_LONG_MOVE_LENGTH, Array);
+                printf ((far rom char *)"%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\r\n", Array[0], Array[1], Array[2], Array[3], Array[4], Array[5], Array[6], Array[7], Array[8], Array[9]);
+                Duration = (((UINT32)Array[1]) << 16) + ((UINT32)Array[2] << 8) + Array[3];
+                Step1 = (((INT32)(INT8)Array[4]) << 16) + ((UINT32)Array[5] << 8) + Array[6];
+                Step2 = (((INT32)(INT8)Array[7]) << 16) + ((UINT32)Array[8] << 8) + Array[9];
+                process_SM(Duration, Step1, Step2);
+                FlashAddr += DEMO_COMMAND_VERY_LONG_MOVE_LENGTH;
+                break;
+            case DEMO_COMMAND_LONG_MOVE:
+                printf ((far rom char *)"Command: Long Move\r\n");                
+                ReadFlash(FlashAddr, DEMO_COMMAND_LONG_MOVE_LENGTH, Array);
+                printf ((far rom char *)"%02X %02X %02X %02X %02X %02X %02X\r\n", Array[0], Array[1], Array[2], Array[3], Array[4], Array[5], Array[6]);
+                Duration = ((UINT32)Array[1] << 8) + Array[2];
+                Step1 = (((INT32)(INT8)Array[3]) << 8) + Array[4];
+                Step2 = (((INT32)(INT8)Array[5]) << 8) + Array[6];
+                process_SM(Duration, Step1, Step2);
+                FlashAddr += DEMO_COMMAND_LONG_MOVE_LENGTH;
+                break;
+            default:
+                printf ((far rom char *)"Command: Short Move\r\n");                
+                ReadFlash(FlashAddr, DEMO_COMMAND_SHORT_MOVE_LENGTH, Array);
+                printf ((far rom char *)"%02X %02X %02X\r\n", Array[0], Array[1], Array[2]);
+                Duration = Array[0];
+                Step1 = ((INT32)(INT8)Array[1]);
+                Step2 = ((INT32)(INT8)Array[2]);
+                process_SM(Duration, Step1, Step2);
+                FlashAddr += DEMO_COMMAND_SHORT_MOVE_LENGTH;
+                break;
+        }
+    }
+    
+}
+
+/* Handle the LED2 state machine. We can be off, on,
+* fast blink (50ms on, 50ms off), slow blink (1s on, 1s off),
+* Or fast 'pip' (50ms on, 1950ms off).
+* Other functions can just set demo_led2_state directly. */
+void demo_blink_led2(void)
+{
+    switch(demo_led2_state)
+    {
+        case LED2_OFF:
+            mLED_2_Off();
+            USR_LED_ms_timer = 0;
+            break;
+            
+        case LED2_ON:
+            mLED_2_On();
+            USR_LED_ms_timer = 0;
+            break;
+            
+        case LED2_FAST_BLINK:
+            if (USR_LED_ms_timer == 0)
+            {
+                USR_LED_ms_timer = 100;
+                mLED_2_On();
+            }
+            else if (USR_LED_ms_timer < 50)
+            {
+                mLED_2_Off();
+            }
+            break;
+            
+        case LED2_SLOW_BLINK:
+            if (USR_LED_ms_timer == 0)
+            {
+                USR_LED_ms_timer = 2000;
+                mLED_2_On();
+            }
+            else if (USR_LED_ms_timer < 1000)
+            {
+                mLED_2_Off();
+            }
+            break;
+            
+        case LED2_SHORT_PIP:
+            if (USR_LED_ms_timer == 0)
+            {
+                USR_LED_ms_timer = 2000;
+                mLED_2_On();
+            }
+            else if (USR_LED_ms_timer < 1950)
+            {
+                mLED_2_Off();
+            }
+            break;
+            
+        default:
+            break;
+    }
+}
+
+/* Initialize the demo module to power on state. */
+void demo_init(void)
+{
+    demo_state = DEMO_IDLE;
+    demo_led2_state = LED2_OFF;
+    // This timer has to start all the way as high as it can go on boot
+    PRG_ms_timer = 0xFFFF;
+    FlashAddr = PF_START_ADDR;
+    
+}
+
+/* Main demo module run function. Gets called from mainline code once
+ * each time through main loop. Watch for PRG button presses to see if 
+ * user wants to change states. Call playback function and LED2 handler.*/
+void demo_run(void)
+{
+    // Check for a PRG switch closure
+    if (!swProgram)
+    {
+        // Do nothing here - primarily don't clear PRG_ms_timer to zero;
+        if (PRG_ms_timer > 2000)
+        {
+           demo_led2_state = LED2_ON;
+        }
+    }
+    else
+    {
+        // If we have a button push between 100ms and 2000ms
+        if (PRG_ms_timer > 100 && PRG_ms_timer < 2000)
+        {
+            // If we are not already playing, then start playback
+            switch (demo_state)
+            {
+                case DEMO_IDLE:
+                    printf ((far rom char *)"Playback started.\r\n");
+                    // Now that we're doing this, let's blink the USER led slowly
+                    demo_state = DEMO_PLAYING;
+                    demo_led2_state = LED2_SLOW_BLINK;
+                    demo_play_init();
+                    break;
+                    
+                case DEMO_RECORDING:
+                    printf ((far rom char *)"Recording Stopped.\r\n");
+                    demo_state = DEMO_IDLE;
+                    demo_led2_state = LED2_OFF;
+                    break;
+                    
+                case DEMO_PLAYING:
+                    printf ((far rom char *)"Playback paused.\r\n");
+                    demo_state = DEMO_PLAYING_PAUSED;
+                    demo_led2_state = LED2_SHORT_PIP;
+                    break;
+                    
+                case DEMO_PLAYING_PAUSED:
+                    printf ((far rom char *)"Playback continuing.\r\n");
+                    demo_led2_state = LED2_SLOW_BLINK;
+                    demo_state = DEMO_PLAYING;
+                    break;
+                    
+                default:
+                    break;
+            }
+        }
+        // If we have a button push more than 2 seconds long
+        else if (PRG_ms_timer > 2000 && PRG_ms_timer != 0xFFFF)
+        {
+             switch (demo_state)
+            {
+                case DEMO_IDLE:
+                    printf ((far rom char *)"Recording.\r\n");
+                    // Now that we're doing this, let's turn the USER led on
+                    erase_path_flash();
+
+                    /* Later we can make this record real data from the PC. For now
+                     we just write a dummy pattern into Flash.*/
+                    write_simple_path_flash();
+                    
+                    demo_state = DEMO_RECORDING;
+                    demo_led2_state = LED2_FAST_BLINK;
+                    break;
+                    
+                case DEMO_RECORDING:
+                    printf ((far rom char *)"Recording Stopped.\r\n");
+                    demo_state = DEMO_IDLE;
+                    demo_led2_state = LED2_OFF;
+                    break;
+                    
+                case DEMO_PLAYING:
+                    printf ((far rom char *)"Playback Stopped.\r\n");
+                    demo_state = DEMO_IDLE;
+                    demo_led2_state = LED2_OFF;
+                    break;
+                    
+                case DEMO_PLAYING_PAUSED:
+                    printf ((far rom char *)"Playback Stopped.\r\n");
+                    demo_state = DEMO_IDLE;
+                    demo_led2_state = LED2_OFF;
+                    break;
+                    
+                default:
+                    break;
+            }
+        }
+        // Always keep resetting this to zero if the button is not pressed
+        PRG_ms_timer = 0;    
+    }
+    
+    // Handle the blinking of LED2
+    demo_blink_led2();
+    
+    // If we are playing back, then call the playback function to see if it's
+    // time for the next move.
+    if (demo_state == DEMO_PLAYING)
+    {
+        demo_play();
+    }
+}
+
+/* This routine queues up byte writes to Flash, doing a 64 byte block write
+ * whenever needed. Call with finish_up = TRUE to do the final write (no matter
+ * if it's on a block boundary or not. 
+ * Set starting_up = TRUE on the first call to this routine to reset the 
+ * address pointer to the beginning of our path flash. */
+void EBBWriteBytesFlash(unsigned int num_bytes, unsigned char *flash_array, BOOL finish_up, BOOL starting_up)
+{
+//    unsigned char write_byte=0;
+    // Flag to remember if interrupts were enabled or not when we start writing to flash
+    BOOL ISRflag = FALSE;
+    // 32 bit value used to transfer starting address to TBLPTR
+	DWORD_VAL flash_addr;
+    static UINT8 block_byte_count;
+    
+    // If this is the first call to the function, start our pointer at the right location
+    if (starting_up == TRUE)
+    {
+        // We are assuming that CONFIG_START_ADDR is always on a block boundary
+        FlashAddr = CONFIG_START_ADDR;
+        block_byte_count = FLASH_WRITE_BLOCK;
+    }
+
+    // Always refresh this value before we start writing
+    flash_addr.Val = FlashAddr;
+
+    // Load the address to Address pointer registers
+    TBLPTRU = flash_addr.byte.UB;
+    TBLPTRH = flash_addr.byte.HB;	
+    TBLPTRL	= flash_addr.byte.LB;
+
+    while(num_bytes)
+    {
+        // Put data byte in TABLAT write register
+        TABLAT = *flash_array++;
+        
+        block_byte_count--;
+        // Are we on the last byte of the block?
+        if (block_byte_count == 0)
+        {
+            // Yes, so don't increment the TBLPTR
+            // Load the data byte into the holding registers
+            _asm  TBLWT _endasm
+            
+            // Now perform write of the block            
+            //*********** Flash write sequence ***********************************
+            EECON1bits.WREN = 1;
+            if(INTCONbits.GIE)
+            {
+                INTCONbits.GIE = 0;
+                ISRflag = TRUE;
+            }		  
+            EECON2 = 0x55;
+            EECON2 = 0xAA;
+            EECON1bits.WR =1;
+            EECON1bits.WREN = 0 ; 
+            if(ISRflag)
+            {
+                INTCONbits.GIE = 1;	
+                ISRflag = 0;
+            }
+        }
+        else
+        {
+            // Load the data byte into the holding registers and increment
+            _asm  TBLWTPOSTINC 	_endasm
+        }
+        
+    }
+
+    // For debugging, we print out the state of flash after every operation
+    dump_flash();	
+}
+

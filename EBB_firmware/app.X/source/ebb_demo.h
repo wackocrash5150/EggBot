@@ -17,6 +17,20 @@ typedef struct {
 	signed int A2steps;
 } packet_type;
 
-extern packet_type far rom packet_list[];
+typedef enum {
+    DEMO_IDLE = 0,
+    DEMO_RECORDING,
+    DEMO_PLAYING,
+    DEMO_PLAYING_PAUSED
+} DemoStateType;
+
+
+extern DemoStateType demo_state;
+
+extern void erase_path_flash(void);
+extern void write_simple_path_flash(void);
+extern void demo_play(void);
+extern void demo_run(void);
+extern void demo_init(void);
 
 #endif

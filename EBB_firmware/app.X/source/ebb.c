@@ -221,12 +221,6 @@ typedef enum
 	SOLENOID_PWM
 } SolenoidStateType;
 
-static void process_SM(
-	UINT32 Duration,
-	INT32 A1Stp,
-	INT32 A2Stp
-);
-
 typedef enum
 {
 	PIC_CONTROLS_DRIVERS = 0,
@@ -261,6 +255,8 @@ static char Layer;
 static BOOL ButtonPushed;
 static BOOL UseAltPause;
 unsigned char QC_ms_timer;
+UINT16 PRG_ms_timer;
+UINT16 USR_LED_ms_timer;
 static UINT StoredEngraverPower;
 // Set TRUE to enable solenoid output for pen up/down
 BOOL gUseSolenoid;
@@ -1052,14 +1048,16 @@ void parse_XM_packet (void)
 //
 // In the future, making the FIFO more elements deep may be cool.
 // 
-static void process_SM(
+void process_SM(
 	UINT32 Duration,
 	INT32 A1Stp,
 	INT32 A2Stp
 )
 {
     UINT32 temp = 0;
-
+    
+    printf((far rom char *)"process_SM(%lu,%ld,%ld)\n\r", Duration, A1Stp, A2Stp);
+ 
 	// Trial: Spin here until there's space in the fifo
 	while(!FIFOEmpty)
 	;
