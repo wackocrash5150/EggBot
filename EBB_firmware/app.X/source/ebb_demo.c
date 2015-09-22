@@ -108,7 +108,7 @@
 
 
 
-#define PF_START_ADDR       0xC000
+#define PF_START_ADDR       0x9000
 #define PF_END_ADDR         0xFFFF
 #define CONFIG_START_ADDR   0xFFF8
 #define CONFIG_LENGTH_BYTES 8
@@ -150,6 +150,7 @@ void erase_path_flash(void)
     WriteBytesFlash(CONFIG_START_ADDR, CONFIG_LENGTH_BYTES, config_bits);
 }
 
+#if 0
 void dump_flash(void)
 {
     UINT8 array[32];
@@ -197,6 +198,7 @@ void dump_flash(void)
         ReadAddr += 32;
     }  
 }
+#endif
 
 /* Write a simple path into flash. */
 void write_simple_path_flash(void)
@@ -204,8 +206,7 @@ void write_simple_path_flash(void)
     UINT8 Array[0x10];
     
     // Store a set of settings
-    dump_flash();
-
+ 
     // Always start of initializing the flash write routine 
     EBBWriteBytesFlash(0, NULL, FALSE, TRUE);
     
@@ -335,7 +336,7 @@ void demo_play(void)
     {
         // Then load up the next command from Flash 
         ReadFlash(FlashAddr, 1, &Command);
-        printf ((far rom char *)"CMD: 0x%02X Addr: 0x%04X\r\n", Command, FlashAddr);
+//        printf ((far rom char *)"CMD: 0x%02X Addr: 0x%04X\r\n", Command, FlashAddr);
         
         // Based on the Command, read out more bytes
         switch (Command)
@@ -343,45 +344,45 @@ void demo_play(void)
             case DEMO_COMMAND_END:
                 demo_state = DEMO_IDLE;
                 demo_led2_state = LED2_OFF;
-                printf ((far rom char *)"Command: End\r\n");                
+//                printf ((far rom char *)"Command: End\r\n");                
                 FlashAddr += DEMO_COMMAND_END_LENGTH;
                 break;
             case DEMO_COMMAND_PEN_UP:
-                printf ((far rom char *)"Command: Pen Up\r\n");                
+//                printf ((far rom char *)"Command: Pen Up\r\n");                
         		process_SP(PEN_UP, 0);
                 FlashAddr += DEMO_COMMAND_PEN_UP_LENGTH;
                 break;
             case DEMO_COMMAND_PEN_DOWN:
-                printf ((far rom char *)"Command: Pen Down\r\n");                
+//                printf ((far rom char *)"Command: Pen Down\r\n");                
         		process_SP(PEN_DOWN, 0);
                 FlashAddr += DEMO_COMMAND_PEN_DOWN_LENGTH;
                 break;
             case DEMO_COMMAND_SHORT_DELAY:
-                printf ((far rom char *)"Command: Short Delay\r\n");                
+//                printf ((far rom char *)"Command: Short Delay\r\n");                
                 ReadFlash(FlashAddr, DEMO_COMMAND_SHORT_DELAY_LENGTH, Array);
-                printf ((far rom char *)"%02X %02X %02X %02X %02X %02X %02X\r\n", Array[0], Array[1], Array[2], Array[3], Array[4], Array[5], Array[6]);
+//                printf ((far rom char *)"%02X %02X %02X %02X %02X %02X %02X\r\n", Array[0], Array[1], Array[2], Array[3], Array[4], Array[5], Array[6]);
                 Duration = Array[1];
                 process_SM(Duration, 0, 0);
                 FlashAddr += DEMO_COMMAND_SHORT_DELAY_LENGTH;
                 break;
             case DEMO_COMMAND_LONG_DELAY:
-                printf ((far rom char *)"Command: Long Delay\r\n");                
+//                printf ((far rom char *)"Command: Long Delay\r\n");                
                 ReadFlash(FlashAddr, DEMO_COMMAND_LONG_DELAY_LENGTH, Array);
-                printf ((far rom char *)"%02X %02X %02X %02X %02X %02X %02X\r\n", Array[0], Array[1], Array[2], Array[3], Array[4], Array[5], Array[6]);
+//                printf ((far rom char *)"%02X %02X %02X %02X %02X %02X %02X\r\n", Array[0], Array[1], Array[2], Array[3], Array[4], Array[5], Array[6]);
                 Duration = (((UINT32)Array[1]) << 8) + Array[2];
                 process_SM(Duration, 0, 0);
                 FlashAddr += DEMO_COMMAND_LONG_DELAY_LENGTH;
                 break;
             case DEMO_COMMAND_STORE_TIMINGS:
-                printf ((far rom char *)"Command: Store Timings\r\n");                
+//                printf ((far rom char *)"Command: Store Timings\r\n");                
                 ReadFlash(FlashAddr, DEMO_COMMAND_STORE_TIMINGS_LENGTH, Array);
-                printf ((far rom char *)"%02X %02X %02X %02X %02X %02X %02X\r\n", Array[0], Array[1], Array[2], Array[3], Array[4], Array[5], Array[6]);
+//                printf ((far rom char *)"%02X %02X %02X %02X %02X %02X %02X\r\n", Array[0], Array[1], Array[2], Array[3], Array[4], Array[5], Array[6]);
                 FlashAddr += DEMO_COMMAND_STORE_TIMINGS_LENGTH;
                 break;
             case DEMO_COMMAND_VERY_LONG_MOVE:
-                printf ((far rom char *)"Command: Very Long Move\r\n");                
+//                printf ((far rom char *)"Command: Very Long Move\r\n");                
                 ReadFlash(FlashAddr, DEMO_COMMAND_VERY_LONG_MOVE_LENGTH, Array);
-                printf ((far rom char *)"%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\r\n", Array[0], Array[1], Array[2], Array[3], Array[4], Array[5], Array[6], Array[7], Array[8], Array[9]);
+//                printf ((far rom char *)"%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\r\n", Array[0], Array[1], Array[2], Array[3], Array[4], Array[5], Array[6], Array[7], Array[8], Array[9]);
                 Duration = (((UINT32)Array[1]) << 16) + ((UINT32)Array[2] << 8) + Array[3];
                 Step1 = (((INT32)(INT8)Array[4]) << 16) + ((UINT32)Array[5] << 8) + Array[6];
                 Step2 = (((INT32)(INT8)Array[7]) << 16) + ((UINT32)Array[8] << 8) + Array[9];
@@ -389,9 +390,9 @@ void demo_play(void)
                 FlashAddr += DEMO_COMMAND_VERY_LONG_MOVE_LENGTH;
                 break;
             case DEMO_COMMAND_LONG_MOVE:
-                printf ((far rom char *)"Command: Long Move\r\n");                
+//                printf ((far rom char *)"Command: Long Move\r\n");                
                 ReadFlash(FlashAddr, DEMO_COMMAND_LONG_MOVE_LENGTH, Array);
-                printf ((far rom char *)"%02X %02X %02X %02X %02X %02X %02X\r\n", Array[0], Array[1], Array[2], Array[3], Array[4], Array[5], Array[6]);
+//                printf ((far rom char *)"%02X %02X %02X %02X %02X %02X %02X\r\n", Array[0], Array[1], Array[2], Array[3], Array[4], Array[5], Array[6]);
                 Duration = ((UINT32)Array[1] << 8) + Array[2];
                 Step1 = (((INT32)(INT8)Array[3]) << 8) + Array[4];
                 Step2 = (((INT32)(INT8)Array[5]) << 8) + Array[6];
@@ -399,9 +400,9 @@ void demo_play(void)
                 FlashAddr += DEMO_COMMAND_LONG_MOVE_LENGTH;
                 break;
             default:
-                printf ((far rom char *)"Command: Short Move\r\n");                
+//                printf ((far rom char *)"Command: Short Move\r\n");                
                 ReadFlash(FlashAddr, DEMO_COMMAND_SHORT_MOVE_LENGTH, Array);
-                printf ((far rom char *)"%02X %02X %02X\r\n", Array[0], Array[1], Array[2]);
+//                printf ((far rom char *)"%02X %02X %02X\r\n", Array[0], Array[1], Array[2]);
                 Duration = Array[0];
                 Step1 = ((INT32)(INT8)Array[1]);
                 Step2 = ((INT32)(INT8)Array[2]);
@@ -506,7 +507,7 @@ void demo_run(void)
             switch (demo_state)
             {
                 case DEMO_IDLE:
-                    printf ((far rom char *)"Playback started.\r\n");
+//                    printf ((far rom char *)"Playback started.\r\n");
                     // Now that we're doing this, let's blink the USER led slowly
                     demo_state = DEMO_PLAYING;
                     demo_led2_state = LED2_SLOW_BLINK;
@@ -514,19 +515,19 @@ void demo_run(void)
                     break;
                     
                 case DEMO_RECORDING:
-                    printf ((far rom char *)"Recording Stopped.\r\n");
+//                    printf ((far rom char *)"Recording Stopped.\r\n");
                     demo_state = DEMO_IDLE;
                     demo_led2_state = LED2_OFF;
                     break;
                     
                 case DEMO_PLAYING:
-                    printf ((far rom char *)"Playback paused.\r\n");
+//                    printf ((far rom char *)"Playback paused.\r\n");
                     demo_state = DEMO_PLAYING_PAUSED;
                     demo_led2_state = LED2_SHORT_PIP;
                     break;
                     
                 case DEMO_PLAYING_PAUSED:
-                    printf ((far rom char *)"Playback continuing.\r\n");
+//                    printf ((far rom char *)"Playback continuing.\r\n");
                     demo_led2_state = LED2_SLOW_BLINK;
                     demo_state = DEMO_PLAYING;
                     break;
@@ -541,7 +542,7 @@ void demo_run(void)
              switch (demo_state)
             {
                 case DEMO_IDLE:
-                    printf ((far rom char *)"Recording.\r\n");
+//                    printf ((far rom char *)"Recording.\r\n");
                     // Now that we're doing this, let's turn the USER led on
                     erase_path_flash();
 
@@ -554,19 +555,19 @@ void demo_run(void)
                     break;
                     
                 case DEMO_RECORDING:
-                    printf ((far rom char *)"Recording Stopped.\r\n");
+//                    printf ((far rom char *)"Recording Stopped.\r\n");
                     demo_state = DEMO_IDLE;
                     demo_led2_state = LED2_OFF;
                     break;
                     
                 case DEMO_PLAYING:
-                    printf ((far rom char *)"Playback Stopped.\r\n");
+//                    printf ((far rom char *)"Playback Stopped.\r\n");
                     demo_state = DEMO_IDLE;
                     demo_led2_state = LED2_OFF;
                     break;
                     
                 case DEMO_PLAYING_PAUSED:
-                    printf ((far rom char *)"Playback Stopped.\r\n");
+//                    printf ((far rom char *)"Playback Stopped.\r\n");
                     demo_state = DEMO_IDLE;
                     demo_led2_state = LED2_OFF;
                     break;
@@ -649,6 +650,7 @@ void EBBWriteBytesFlash(unsigned int num_bytes, unsigned char *flash_array, BOOL
         TABLAT = *flash_array++;
         
         block_byte_count--;
+        num_bytes--;
         // Count this byte in our master pointer into flash
         FlashAddr++;
         
@@ -660,7 +662,7 @@ void EBBWriteBytesFlash(unsigned int num_bytes, unsigned char *flash_array, BOOL
             _asm  TBLWT _endasm
             
             // Now perform write of the block
-//            EBBBlockWrite();
+            EBBBlockWrite();
             
             //
             block_byte_count = FLASH_WRITE_BLOCK;
@@ -684,10 +686,29 @@ void EBBWriteBytesFlash(unsigned int num_bytes, unsigned char *flash_array, BOOL
     // not actually full.
     if (finish_up == TRUE && block_byte_count != FLASH_WRITE_BLOCK)
     {
-//        EBBBlockWrite();
+        // Before we write this data, we need to fill in the rest of the block.
+        // We will fill it in with the data that's already in the flash at those
+        // locations
+        
+        // block_byte_count contains the number of bytes left in this block
+        while (block_byte_count)
+        {
+            _asm  TBLRD _endasm
+            block_byte_count--;
+            if (block_byte_count)
+            {
+                _asm  TBLWTPOSTINC 	_endasm
+            }
+            else
+            {
+                _asm  TBLWT 	_endasm
+            }
+        }
+        
+        EBBBlockWrite();
     }
 
     // For debugging, we print out the state of flash after every operation
-    dump_flash();	
+//    dump_flash();	
 }
 
