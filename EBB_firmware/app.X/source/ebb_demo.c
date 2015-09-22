@@ -108,7 +108,7 @@
 
 
 
-#define PF_START_ADDR       0xB000
+#define PF_START_ADDR       0xC000
 #define PF_END_ADDR         0xFFFF
 #define CONFIG_START_ADDR   0xFFF8
 #define CONFIG_LENGTH_BYTES 8
@@ -590,6 +590,31 @@ void demo_run(void)
     }
 }
 
+/* This function simply performs a 64 byte (block) write.
+ * It assumes that everything (TBLPTR) has all been set up already.*/
+void EBBBlockWrite(void)
+{
+    // Flag to remember if interrupts were enabled or not when we start writing to flash
+    BOOL ISRflag = FALSE;
+
+    //*********** Flash write sequence ***********************************
+    EECON1bits.WREN = 1;
+    if(INTCONbits.GIE)
+    {
+        INTCONbits.GIE = 0;
+        ISRflag = TRUE;
+    }		  
+    EECON2 = 0x55;
+    EECON2 = 0xAA;
+    EECON1bits.WR =1;
+    EECON1bits.WREN = 0 ; 
+    if(ISRflag)
+    {
+        INTCONbits.GIE = 1;	
+        ISRflag = 0;
+    }
+}
+
 /* This routine queues up byte writes to Flash, doing a 64 byte block write
  * whenever needed. Call with finish_up = TRUE to do the final write (no matter
  * if it's on a block boundary or not. 
@@ -598,8 +623,6 @@ void demo_run(void)
 void EBBWriteBytesFlash(unsigned int num_bytes, unsigned char *flash_array, BOOL finish_up, BOOL starting_up)
 {
 //    unsigned char write_byte=0;
-    // Flag to remember if interrupts were enabled or not when we start writing to flash
-    BOOL ISRflag = FALSE;
     // 32 bit value used to transfer starting address to TBLPTR
 	DWORD_VAL flash_addr;
     static UINT8 block_byte_count;
@@ -608,7 +631,7 @@ void EBBWriteBytesFlash(unsigned int num_bytes, unsigned char *flash_array, BOOL
     if (starting_up == TRUE)
     {
         // We are assuming that CONFIG_START_ADDR is always on a block boundary
-        FlashAddr = CONFIG_START_ADDR;
+        FlashAddr = PF_START_ADDR;
         block_byte_count = FLASH_WRITE_BLOCK;
     }
 
@@ -626,37 +649,42 @@ void EBBWriteBytesFlash(unsigned int num_bytes, unsigned char *flash_array, BOOL
         TABLAT = *flash_array++;
         
         block_byte_count--;
+        // Count this byte in our master pointer into flash
+        FlashAddr++;
+        
         // Are we on the last byte of the block?
         if (block_byte_count == 0)
         {
             // Yes, so don't increment the TBLPTR
-            // Load the data byte into the holding registers
+            // Load the data byte into the holding register
             _asm  TBLWT _endasm
             
-            // Now perform write of the block            
-            //*********** Flash write sequence ***********************************
-            EECON1bits.WREN = 1;
-            if(INTCONbits.GIE)
-            {
-                INTCONbits.GIE = 0;
-                ISRflag = TRUE;
-            }		  
-            EECON2 = 0x55;
-            EECON2 = 0xAA;
-            EECON1bits.WR =1;
-            EECON1bits.WREN = 0 ; 
-            if(ISRflag)
-            {
-                INTCONbits.GIE = 1;	
-                ISRflag = 0;
-            }
+            // Now perform write of the block
+//            EBBBlockWrite();
+            
+            //
+            block_byte_count = FLASH_WRITE_BLOCK;
+
+            // Reload the TBLPTR with the new block address
+            flash_addr.Val = FlashAddr;
+
+            // Load the address to Address pointer registers
+            TBLPTRU = flash_addr.byte.UB;
+            TBLPTRH = flash_addr.byte.HB;	
+            TBLPTRL	= flash_addr.byte.LB;
         }
         else
         {
             // Load the data byte into the holding registers and increment
             _asm  TBLWTPOSTINC 	_endasm
-        }
-        
+        }        
+    }
+    
+    // If finish_up is true, caller wants to close out this block even if its
+    // not actually full.
+    if (finish_up == TRUE && block_byte_count != FLASH_WRITE_BLOCK)
+    {
+//        EBBBlockWrite();
     }
 
     // For debugging, we print out the state of flash after every operation
