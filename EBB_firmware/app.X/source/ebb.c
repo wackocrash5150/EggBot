@@ -1056,7 +1056,7 @@ void process_SM(
 {
     UINT32 temp = 0;
     
-    printf((far rom char *)"process_SM(%lu,%ld,%ld)\n\r", Duration, A1Stp, A2Stp);
+//    printf((far rom char *)"process_SM(%lu,%ld,%ld)\n\r", Duration, A1Stp, A2Stp);
  
 	// Trial: Spin here until there's space in the fifo
 	while(!FIFOEmpty)
@@ -1069,6 +1069,8 @@ void process_SM(
         // This is OK because we only need to multiply the 3 byte Duration by
         // 25, so it fits in 4 bytes OK.
   		CommandFIFO[0].DelayCounter = HIGH_ISR_TICKS_PER_MS * Duration;
+        
+        demo_write_delay(Duration);
 	}
 	else
 	{
@@ -1144,6 +1146,8 @@ void process_SM(
         CommandFIFO[0].StepAdd[1] = temp;
         CommandFIFO[0].StepsCounter[1] = A2Stp;
         CommandFIFO[0].Command = COMMAND_MOTOR_MOVE;
+
+        demo_write_move(Duration, A1Stp, A2Stp);
 	}
 		
 	FIFOEmpty = FALSE;
@@ -1322,7 +1326,7 @@ void parse_SP_packet(void)
 	print_ack();
 }
 
-// Interal use function -
+// Internal use function -
 // Perform a state change on the pen RC servo output. Move it up or move it down
 // <NewState> is either PEN_UP or PEN_DOWN.
 // <CommandDuration> is the number of milliseconds to wait before executing the
@@ -1349,6 +1353,8 @@ void process_SP(PenStateType NewState, UINT16 CommandDuration)
 
     // Now schedule the movement with the RCServo2 function
     RCServo2_Move(Position, g_servo2_RPn, Rate, CommandDuration);
+    
+    demo_write_pen_state(NewState, CommandDuration);
 }
 
 // Enable Motor

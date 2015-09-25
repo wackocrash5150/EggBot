@@ -3,19 +3,7 @@
 
 #include "GenericTypeDefs.h"
 #include "Compiler.h"
-
-typedef enum {
-	COMD_END = 0,
-	COMD_SM, 
-	COMD_SP
-} comd_type;
-
-typedef struct {
-	comd_type comd;
-	unsigned int duration;
-	signed int A1steps;
-	signed int A2steps;
-} packet_type;
+#include "ebb.h"
 
 typedef enum {
     DEMO_IDLE = 0,
@@ -32,5 +20,9 @@ extern void write_simple_path_flash(void);
 extern void demo_play(void);
 extern void demo_run(void);
 extern void demo_init(void);
+extern BOOL demo_is_recording(void);
+extern void demo_write_delay(UINT32 delay_ms);
+extern void demo_write_pen_state(PenStateType NewState, UINT16 CommandDuration);
+extern void demo_write_move(UINT32 Duration, INT32 A1Stp, INT32 A2Stp);
 
 #endif

@@ -108,7 +108,7 @@
 
 
 
-#define PF_START_ADDR       0x9000
+#define PF_START_ADDR       0xB000
 #define PF_END_ADDR         0xFFFF
 #define CONFIG_START_ADDR   0xFFF8
 #define CONFIG_LENGTH_BYTES 8
@@ -131,6 +131,11 @@ DemoLED2StateType demo_led2_state;
 UINT16 FlashAddr;
     
 void EBBWriteBytesFlash(unsigned int num_bytes, unsigned char *flash_array, BOOL finish_up, BOOL starting_up);
+
+BOOL demo_is_recording(void)
+{
+    return(demo_state == DEMO_RECORDING);
+}
 
 
 /* This function erases the section of Flash that we have set aside for
@@ -199,6 +204,99 @@ void dump_flash(void)
     }  
 }
 #endif
+
+void demo_write_move(UINT32 Duration, INT32 A1Stp, INT32 A2Stp)
+{
+    UINT8 Array[10];
+
+    if (demo_is_recording())
+    {
+        if (Duration <= 240 && A1Stp >= -128 && A1Stp <= 127 && A2Stp >= -128 && A2Stp < 127)
+        {
+            // Do a couple short moves
+            Array[0] = (UINT8)Duration;
+            Array[1] = (INT8)A1Stp;
+            Array[2] = (INT8)A2Stp;
+            EBBWriteBytesFlash(DEMO_COMMAND_SHORT_MOVE_LENGTH, Array, FALSE, FALSE); 
+        }
+        else if (Duration < 0x10000 && A1Stp >= -0x8000 && A1Stp <= 0x7FFF && A2Stp >= -0x8000 && A2Stp <= 0x7FFF)
+        {
+            // The a couple long moves
+            Array[0] = DEMO_COMMAND_LONG_MOVE;
+            Array[1] = 0x03;
+            Array[2] = 0xE8;
+            Array[3] = 0x03;
+            Array[4] = 0xE8;
+            Array[5] = 0x03;
+            Array[6] = 0xE8;
+            EBBWriteBytesFlash(DEMO_COMMAND_LONG_MOVE_LENGTH, Array, FALSE, FALSE); 
+        }
+        else
+        {
+            Array[0] = DEMO_COMMAND_VERY_LONG_MOVE;
+            Array[1] = 0x01;
+            Array[2] = 0xD4;
+            Array[3] = 0xC0;    // 120,000
+            Array[4] = 0x01;
+            Array[5] = 0x86;
+            Array[6] = 0xA0;    // 100,000
+            Array[7] = 0xFE;
+            Array[8] = 0x79;
+            Array[9] = 0x60;    // -100,000
+            EBBWriteBytesFlash(DEMO_COMMAND_VERY_LONG_MOVE_LENGTH, Array, FALSE, FALSE);
+        }
+    }
+}
+
+void demo_write_delay(UINT32 delay_ms)
+{
+    UINT8 Array[3];
+
+    if (demo_is_recording())
+    {
+        if (delay_ms < 256)
+        {
+            // Do a short delay
+            Array[0] = DEMO_COMMAND_SHORT_DELAY;
+            Array[1] = (UINT8)delay_ms;
+            EBBWriteBytesFlash(DEMO_COMMAND_SHORT_DELAY_LENGTH, Array, FALSE, FALSE); 
+        }
+        else
+        {
+            // Do a long delay
+            Array[0] = DEMO_COMMAND_LONG_DELAY;
+            Array[1] = (UINT8)(delay_ms >> 8);
+            Array[2] = (UINT8)delay_ms;
+            EBBWriteBytesFlash(DEMO_COMMAND_LONG_DELAY_LENGTH, Array, FALSE, FALSE); 
+        }
+    }
+}
+
+void demo_write_pen_state(PenStateType NewState, UINT16 CommandDuration)
+{
+    UINT8 Array[1];
+
+    if (demo_is_recording())
+    {
+        if (NewState == PEN_UP)
+        {
+            // Put the pen up
+            Array[0] = DEMO_COMMAND_PEN_UP;
+            EBBWriteBytesFlash(DEMO_COMMAND_PEN_UP_LENGTH, Array, FALSE, FALSE); 
+        }
+        else
+        {
+            // Put the pen down
+            Array[0] = DEMO_COMMAND_PEN_DOWN;
+            EBBWriteBytesFlash(DEMO_COMMAND_PEN_DOWN_LENGTH, Array, FALSE, FALSE); 
+        }
+        
+        if (CommandDuration > 0)
+        {
+            demo_write_delay(CommandDuration);
+        }
+    }
+}
 
 /* Write a simple path into flash. */
 void write_simple_path_flash(void)
@@ -548,8 +646,9 @@ void demo_run(void)
 
                     /* Later we can make this record real data from the PC. For now
                      we just write a dummy pattern into Flash.*/
-                    write_simple_path_flash();
-                    
+                    //write_simple_path_flash();
+                    EBBWriteBytesFlash(0, NULL, FALSE, TRUE);
+
                     demo_state = DEMO_RECORDING;
                     demo_led2_state = LED2_FAST_BLINK;
                     break;
@@ -558,6 +657,7 @@ void demo_run(void)
 //                    printf ((far rom char *)"Recording Stopped.\r\n");
                     demo_state = DEMO_IDLE;
                     demo_led2_state = LED2_OFF;
+                    EBBWriteBytesFlash(0, NULL, TRUE, FALSE);
                     break;
                     
                 case DEMO_PLAYING:
