@@ -304,6 +304,8 @@ static void InitializeSystem(void)
 
     USBDeviceInit();	//usb_device.c.  Initializes USB module SFRs and firmware
     					//variables to known states.
+    
+    spi_init();
 }//end InitializeSystem
 
 // ******************************************************************************************************
