@@ -18,3 +18,10 @@ CND_ARTIFACT_PATH_45J50=dist/45J50/production/bootloader.X.production.hex
 CND_PACKAGE_DIR_45J50=${CND_DISTDIR}/45J50/package
 CND_PACKAGE_NAME_45J50=bootloader.x.tar
 CND_PACKAGE_PATH_45J50=${CND_DISTDIR}/45J50/package/bootloader.x.tar
+# EBB_v4 configuration
+CND_ARTIFACT_DIR_EBB_v4=dist/EBB_v4/production
+CND_ARTIFACT_NAME_EBB_v4=bootloader.X.production.hex
+CND_ARTIFACT_PATH_EBB_v4=dist/EBB_v4/production/bootloader.X.production.hex
+CND_PACKAGE_DIR_EBB_v4=${CND_DISTDIR}/EBB_v4/package
+CND_PACKAGE_NAME_EBB_v4=bootloader.x.tar
+CND_PACKAGE_PATH_EBB_v4=${CND_DISTDIR}/EBB_v4/package/bootloader.x.tar

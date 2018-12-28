@@ -47,83 +47,114 @@
 #define INPUT_PIN           1
 #define OUTPUT_PIN          0
 
-//Uncomment below if using the YOUR_BOARD hardware platform
 #if defined(EBB_V10)
-/** U S B ***********************************************************/
-#if defined(USE_USB_BUS_SENSE_IO)
-#define usb_bus_sense       PORTDbits.RD3
-#else
-#define usb_bus_sense       1
-#endif
+  /** U S B ***********************************************************/
+  #if defined(USE_USB_BUS_SENSE_IO)
+    #define usb_bus_sense       PORTDbits.RD3
+  #else
+    #define usb_bus_sense       1
+  #endif
 
-#define self_power          0
+  #define self_power          0
 
-///** L E D ***********************************************************/
-// USB LED = RD0
-// USR LED = RD1
-#define mInitAllLEDs()      LATDbits.LATD0 = 0; LATDbits.LATD1 = 0; TRISDbits.TRISD0 = 0; TRISDbits.TRISD1 = 0;
+  ///** L E D ***********************************************************/
+  // USB LED = RD0
+  // USR LED = RD1
+  #define mInitAllLEDs()      LATDbits.LATD0 = 0; LATDbits.LATD1 = 0; TRISDbits.TRISD0 = 0; TRISDbits.TRISD1 = 0;
 
-#define mLED_1              LATDbits.LATD0
-#define mLED_2              LATDbits.LATD1
+  #define mLED_1              LATDbits.LATD0
+  #define mLED_2              LATDbits.LATD1
 
-#define mLED_1_On()         mLED_1 = 1;
-#define mLED_2_On()         mLED_2 = 1;
+  #define mLED_1_On()         mLED_1 = 1;
+  #define mLED_2_On()         mLED_2 = 1;
 
-#define mLED_1_Off()        mLED_1 = 0;
-#define mLED_2_Off()        mLED_2 = 0;
+  #define mLED_1_Off()        mLED_1 = 0;
+  #define mLED_2_Off()        mLED_2 = 0;
 
-#define mLED_1_Toggle()     mLED_1 = !mLED_1;
-#define mLED_2_Toggle()     mLED_2 = !mLED_2;
-//
-///** S W I T C H *****************************************************/
-// PRG switch = RD2
-#define mInitAllSwitches()  TRISDbits.TRISD2=1;
-#define mInitSwitch2()      TRISDbits.TRISD2=1;
+  #define mLED_1_Toggle()     mLED_1 = !mLED_1;
+  #define mLED_2_Toggle()     mLED_2 = !mLED_2;
+  //
+  ///** S W I T C H *****************************************************/
+  // PRG switch = RD2
+  #define mInitAllSwitches()  TRISDbits.TRISD2=1;
+  #define mInitSwitch2()      TRISDbits.TRISD2=1;
 
-#define sw2                 PORTDbits.RD2
+  #define sw2                 PORTDbits.RD2
 
 #elif defined(EBB_V11)
-/** U S B ***********************************************************/
-//#define tris_usb_bus_sense  TRISBbits.TRISB5    // Input
+  /** U S B ***********************************************************/
+  //#define tris_usb_bus_sense  TRISBbits.TRISB5    // Input
 
-#if defined(USE_USB_BUS_SENSE_IO)
-#define usb_bus_sense       PORTCbits.RC7
+  #if defined(USE_USB_BUS_SENSE_IO)
+    #define usb_bus_sense     PORTCbits.RC7
+  #else
+    #define usb_bus_sense     1
+  #endif
+
+  #define self_power          0
+
+  ///** L E D ***********************************************************/
+  // USB LED = RD3
+  // USR LED = RD2
+  #define mInitAllLEDs()      LATDbits.LATD3 = 0; LATDbits.LATD2 = 0; TRISDbits.TRISD3 = 0; TRISDbits.TRISD2 = 0;
+
+  #define mLED_1              LATDbits.LATD3
+  #define mLED_2              LATDbits.LATD2
+
+  #define mLED_1_On()         mLED_1 = 1;
+  #define mLED_2_On()         mLED_2 = 1;
+
+  #define mLED_1_Off()        mLED_1 = 0;
+  #define mLED_2_Off()        mLED_2 = 0;
+
+  #define mLED_1_Toggle()     mLED_1 = !mLED_1;
+  #define mLED_2_Toggle()     mLED_2 = !mLED_2;
+  //
+  ///** S W I T C H *****************************************************/
+  // PRG switch = RA7
+  #define mInitAllSwitches()  TRISAbits.TRISA7=1;
+  #define mInitSwitch2()      TRISAbits.TRISA7=1;
+
+  #define sw2                 PORTAbits.RA7
+
+#elif defined(EBB_V40)
+  /** U S B ***********************************************************/
+  //#define tris_usb_bus_sense  TRISBbits.TRISB5    // Input
+
+  #if defined(USE_USB_BUS_SENSE_IO)
+    #define usb_bus_sense     PORTCbits.RC1
+  #else
+    #define usb_bus_sense     1
+  #endif
+
+  #define self_power          0
+
+  ///** L E D ***********************************************************/
+  // USB LED mLED_1 (GREEN) = RC6
+  // USR LED mLED_2 (RED)   = RD3
+  #define mInitAllLEDs()      LATDbits.LATD3 = 0; LATCbits.LATC6 = 0; TRISDbits.TRISD3 = 0; TRISCbits.TRISC6 = 0;
+
+  #define mLED_1              LATCbits.LATC6
+  #define mLED_2              LATDbits.LATD3
+
+  #define mLED_1_On()         mLED_1 = 1;
+  #define mLED_2_On()         mLED_2 = 1;
+
+  #define mLED_1_Off()        mLED_1 = 0;
+  #define mLED_2_Off()        mLED_2 = 0;
+
+  #define mLED_1_Toggle()     mLED_1 = !mLED_1;
+  #define mLED_2_Toggle()     mLED_2 = !mLED_2;
+  //
+  ///** S W I T C H *****************************************************/
+  // PRG switch = RC7
+  #define mInitAllSwitches()  TRISCbits.TRISC7 = 1;
+  #define mInitSwitch2()      TRISCbits.TRISC7 = 1;
+
+  #define sw2                 PORTCbits.RC7
+
 #else
-#define usb_bus_sense       1
-#endif
-
-#define self_power          0
-
-///** L E D ***********************************************************/
-// USB LED = RD3
-// USR LED = RD2
-#define mInitAllLEDs()      LATDbits.LATD3 = 0; LATDbits.LATD2 = 0; TRISDbits.TRISD3 = 0; TRISDbits.TRISD2 = 0;
-
-#define mLED_1              LATDbits.LATD3
-#define mLED_2              LATDbits.LATD2
-
-#define mLED_1_On()         mLED_1 = 1;
-#define mLED_2_On()         mLED_2 = 1;
-
-#define mLED_1_Off()        mLED_1 = 0;
-#define mLED_2_Off()        mLED_2 = 0;
-
-#define mLED_1_Toggle()     mLED_1 = !mLED_1;
-#define mLED_2_Toggle()     mLED_2 = !mLED_2;
-//
-///** S W I T C H *****************************************************/
-// PRG switch = RA7
-#define mInitAllSwitches()  TRISAbits.TRISA7=1;
-#define mInitSwitch2()      TRISAbits.TRISA7=1;
-
-#define sw2                 PORTAbits.RA7
-
-/********************************************************************/
-/********************************************************************/
-/********************************************************************/
-
-#else
-    #error Not a supported board (yet), add I/O pin mapping in __FILE__, line __LINE__
+  #error Not a supported board (yet), add I/O pin mapping in __FILE__, line __LINE__
 #endif
 
 #endif //IO_CFG_H

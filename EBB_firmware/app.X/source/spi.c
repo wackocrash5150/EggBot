@@ -35,23 +35,50 @@ void spi_init(void)
   SSP2CON1bits.CKP = 1;         // Clock idles high
   SSP2CON1bits.SSPEN = 1;       // Turn MSSP2 (SPI2) peripheral on
   
-  spi_send(0x80, 0x00000008);
-  spi_send(0xEC, 0x000100C5);
-  spi_send(0xB0, 0x00011F05);
-  spi_send(0x90, 0x000401C8);
-  spi_send(0xB2, 0x00061A80);
-  spi_send(0xB1, 0x00007530);
+  spi_send(0x80 + 0x00, 0x00000008);   // GCONF=8: Enable PP and INT outputs
+  spi_send(0x80 + 0x6C, 0x000100C5);   // CHOPCONF: TOFF=5, HSRTR=4, HEND=1, TBL=2, CHM=0 (spreadCycle)
+  spi_send(0x80 + 0x7C, 0x000100C5);   // CHOPCONF: TOFF=5, HSRTR=4, HEND=1, TBL=2, CHM=0 (spreadCycle)
+  spi_send(0x80 + 0x30, 0x00011F05);   // IHOLD_IRUN: IHOLD=5, IRUN=31 (max current), IHOLDDELAY=1
+  spi_send(0x80 + 0x50, 0x00011F05);   // IHOLD_IRUN: IHOLD=5, IRUN=31 (max current), IHOLDDELAY=1
+  spi_send(0x80 + 0x10, 0x000401C8);   // PWM_CONF: AUTO=1, 2/1024 Fclk, Switch amplitude limit=200, Grad=1
+  spi_send(0x80 + 0x18, 0x000401C8);   // PWM_CONF: AUTO=1, 2/1024 Fclk, Switch amplitude limit=200, Grad=1
+  spi_send(0x80 + 0x32, 0x00061A80);   // VHIGH=400 000: Set VHIGH to a high value to allow stealthChop
+  spi_send(0x80 + 0x52, 0x00061A80);   // VHIGH=400 000: Set VHIGH to a high value to allow stealthChop
+  spi_send(0x80 + 0x31, 0x00007530);   // VCOOLTHRS=30000: Set upper limit for stealthChop to about 30RPM
+  spi_send(0x80 + 0x51, 0x00007530);   // VCOOLTHRS=30000: Set upper limit for stealthChop to about 30RPM
   
-  spi_send(0xA4, 0x000003E8);
-  spi_send(0xA5, 0x0000C350);
-  spi_send(0xA6, 0x000001F4);
-  spi_send(0xA7, 0x000304D0);
-  spi_send(0xA8, 0x000002BC);
-  spi_send(0xAA, 0x00000578);
-  spi_send(0xAB, 0x0000000A);
- 
-  spi_send(0xA0, 0x00000000);
-  spi_send(0xAD, 0xFFFF3800);
+//  spi_send(0x80 + 0x24, 0x000003E8);   // A1 1 000 First acceleration
+//  spi_send(0x80 + 0x44, 0x000003E8);   // A1 1 000 First acceleration
+  spi_send(0x80 + 0x24, 0x00000001);   // A1 0 First acceleration
+  spi_send(0x80 + 0x44, 0x00000001);   // A1 0 First acceleration
+  //spi_send(0x80 + 0x25, 0x0000C350);   // V1 = 50 000 Acceleration threshold velocity V1
+  //spi_send(0x80 + 0x45, 0x0000C350);   // V1 = 50 000 Acceleration threshold velocity V1
+  spi_send(0x80 + 0x25, 0x00000000);   // V1 = 0 Acceleration threshold velocity V1 (disables A1 and D1 phase)
+  spi_send(0x80 + 0x45, 0x00000000);   // V1 = 0 Acceleration threshold velocity V1 (disables A1 and D1 phase)
+  spi_send(0x80 + 0x25, 0x00004E20);   // VSTART = 200 000
+  spi_send(0x80 + 0x45, 0x00004E20);   // VSTART = 200 000
+  //spi_send(0x80 + 0x26, 0x000001F4);   // AMAX = 500 Acceleration above V1
+  //spi_send(0x80 + 0x46, 0x000001F4);   // AMAX = 500 Acceleration above V1
+  spi_send(0x80 + 0x26, 0x00000001);   // AMAX = 0 Acceleration above V1
+  spi_send(0x80 + 0x46, 0x00000001);   // AMAX = 0 Acceleration above V1
+  spi_send(0x80 + 0x27, 0x00004E20);   // VMAX = 200 000
+  spi_send(0x80 + 0x47, 0x00004E20);   // VMAX = 200 000
+  //spi_send(0x80 + 0x28, 0x000002BC);   // DMAX = 700 Deceleration above V1
+  //spi_send(0x80 + 0x48, 0x000002BC);   // DMAX = 700 Deceleration above V1
+  spi_send(0x80 + 0x28, 0x00000001);   // DMAX = 1 Deceleration above V1
+  spi_send(0x80 + 0x48, 0x00000001);   // DMAX = 1 Deceleration above V1
+  //spi_send(0x80 + 0x2A, 0x00000578);   // D1 = 1400 Deceleration below V1
+  //spi_send(0x80 + 0x4A, 0x00000578);   // D1 = 1400 Deceleration below V1
+  spi_send(0x80 + 0x2A, 0x00000001);   // D1 = 1 Deceleration below V1
+  spi_send(0x80 + 0x4A, 0x00000001);   // D1 = 1 Deceleration below V1
+  spi_send(0x80 + 0x2B, 0x00004E20);   // VSTOP = 10 Stop velocity (Near to zero)
+  spi_send(0x80 + 0x4B, 0x00004E20);   // VSTOP = 10 Stop velocity (Near to zero)
+  spi_send(0x80 + 0x20, 0x00000000);   // RAMPMODE = 0 (Target position move)
+  spi_send(0x80 + 0x40, 0x00000000);   // RAMPMODE = 0 (Target position move)
+  spi_send(0x80 + 0x21, 0x00000000);   // XACTUAL = 0
+  spi_send(0x80 + 0x41, 0x00000000);   // XACTUAL = 0
+  spi_send(0x80 + 0x2D, 0xFFFF3800);   // XTARGET = -51200 (move one rotation left (200*256 microsteps))
+  spi_send(0x80 + 0x4D, 0xFFFF3800);   // XTARGET = -51200 (move one rotation left (200*256 microsteps))
 }
 
 /// TODO: Add timeout?
