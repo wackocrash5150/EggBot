@@ -1,16 +1,16 @@
 /********************************************************************
- FileName:     	usb_config.h
- Dependencies: 	Always: GenericTypeDefs.h, usb_device.h
-               	Situational: usb_function_hid.h, usb_function_cdc.h, usb_function_msd.h, etc.
- Processor:		PIC18 or PIC24 USB Microcontrollers
- Hardware:		The code is natively intended to be used on the following
- 				hardware platforms: PICDEM™ FS USB Demo Board, 
- 				PIC18F87J50 FS USB Plug-In Module, or
- 				Explorer 16 + PIC24 USB PIM.  The firmware may be
- 				modified for use on other USB platforms by editing the
- 				HardwareProfile.h file.
- Complier:  	Microchip C18 (for PIC18) or C30 (for PIC24)
- Company:		Microchip Technology, Inc.
+ FileName:      usb_config.h
+ Dependencies:  Always: GenericTypeDefs.h, usb_device.h
+                Situational: usb_function_hid.h, usb_function_cdc.h, usb_function_msd.h, etc.
+ Processor:   PIC18 or PIC24 USB Microcontrollers
+ Hardware:    The code is natively intended to be used on the following
+              hardware platforms: PICDEM™ FS USB Demo Board, 
+              PIC18F87J50 FS USB Plug-In Module, or
+              Explorer 16 + PIC24 USB PIM.  The firmware may be
+              modified for use on other USB platforms by editing the
+              HardwareProfile.h file.
+ Complier:    Microchip C18 (for PIC18) or C30 (for PIC24)
+ Company:     Microchip Technology, Inc.
 
  Software License Agreement:
 
@@ -55,28 +55,28 @@
 #define USBCFG_H
 
 /** DEFINITIONS ****************************************************/
-#define USB_EP0_BUFF_SIZE		64	// Valid Options: 8, 16, 32, or 64 bytes.
-								// Using larger options take more SRAM, but
-								// does not provide much advantage in most types
-								// of applications.  Exceptions to this, are applications
-								// that use EP0 IN or OUT for sending large amounts of
-								// application related data.
-									
-#define USB_MAX_NUM_INT     	1   // For tracking Alternate Setting
+#define USB_EP0_BUFF_SIZE   64  // Valid Options: 8, 16, 32, or 64 bytes.
+                                // Using larger options take more SRAM, but
+                                // does not provide much advantage in most types
+                                // of applications.  Exceptions to this, are applications
+                                // that use EP0 IN or OUT for sending large amounts of
+                                // application related data.
 
-//Device descriptor - if these two definitions are not defined then
+#define USB_MAX_NUM_INT     1   // For tracking Alternate Setting
+
+// Device descriptor - if these two definitions are not defined then
 //  a ROM USB_DEVICE_DESCRIPTOR variable by the exact name of device_dsc
 //  must exist.
 #define USB_USER_DEVICE_DESCRIPTOR &device_dsc
 #define USB_USER_DEVICE_DESCRIPTOR_INCLUDE extern ROM USB_DEVICE_DESCRIPTOR device_dsc
 
-//Configuration descriptors - if these two definitions do not exist then
+// Configuration descriptors - if these two definitions do not exist then
 //  a ROM BYTE *ROM variable named exactly USB_CD_Ptr[] must exist.
 #define USB_USER_CONFIG_DESCRIPTOR USB_CD_Ptr
 #define USB_USER_CONFIG_DESCRIPTOR_INCLUDE extern ROM BYTE *ROM USB_CD_Ptr[]
 
-//Make sure only one of the below "#define USB_PING_PONG_MODE"
-//is uncommented.
+// Make sure only one of the below "#define USB_PING_PONG_MODE"
+// is uncommented.
 //#define USB_PING_PONG_MODE USB_PING_PONG__NO_PING_PONG
 #define USB_PING_PONG_MODE USB_PING_PONG__FULL_PING_PONG
 //#define USB_PING_PONG_MODE USB_PING_PONG__EP0_OUT_ONLY
@@ -91,7 +91,7 @@
 //#define USB_PULLUP_OPTION USB_PULLUP_DISABLED
 
 #define USB_TRANSCEIVER_OPTION USB_INTERNAL_TRANSCEIVER
-//External Transceiver support is not available on all product families.  Please
+// External Transceiver support is not available on all product families.  Please
 //  refer to the product family datasheet for more information if this feature
 //  is available on the target processor.
 //#define USB_TRANSCEIVER_OPTION USB_EXTERNAL_TRANSCEIVER
@@ -162,7 +162,7 @@
 #define USB_USE_CDC
 
 /** ENDPOINTS ALLOCATION *******************************************/
-#define USB_MAX_EP_NUMBER	    2
+#define USB_MAX_EP_NUMBER       2
 
 /* CDC */
 #define CDC_COMM_INTF_ID        0x0

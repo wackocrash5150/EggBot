@@ -13,8 +13,8 @@ ifeq "${IGNORE_LOCAL}" "TRUE"
 else
 include Makefile
 # Include makefile containing local settings
-ifeq "$(wildcard nbproject/Makefile-local-EBBv13_with_bootloader.mk)" "nbproject/Makefile-local-EBBv13_with_bootloader.mk"
-include nbproject/Makefile-local-EBBv13_with_bootloader.mk
+ifeq "$(wildcard nbproject/Makefile-local-EBB_v40_with_bootloader.mk)" "nbproject/Makefile-local-EBB_v40_with_bootloader.mk"
+include nbproject/Makefile-local-EBB_v40_with_bootloader.mk
 endif
 endif
 
@@ -25,7 +25,7 @@ MV=mv
 CP=cp 
 
 # Macros
-CND_CONF=EBBv13_with_bootloader
+CND_CONF=EBB_v40_with_bootloader
 ifeq ($(TYPE_IMAGE), DEBUG_RUN)
 IMAGE_TYPE=debug
 OUTPUT_SUFFIX=cof
@@ -57,17 +57,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=../Microchip/USB/usb_device.c "../Microchip/USB/CDC Device Driver/usb_function_cdc.c" source/ebb.c source/main.c source/RCServo2.c source/UBW.c source/usb_descriptors.c source/ebb_demo.c source/spi.c
+SOURCEFILES_QUOTED_IF_SPACED=../Microchip/USB/usb_device.c "../Microchip/USB/CDC Device Driver/usb_function_cdc.c" source/ebb.c source/main.c source/RCServo2.c source/UBW.c source/usb_descriptors.c source/spi.c
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/_ext/343710134/usb_device.o ${OBJECTDIR}/_ext/131024517/usb_function_cdc.o ${OBJECTDIR}/source/ebb.o ${OBJECTDIR}/source/main.o ${OBJECTDIR}/source/RCServo2.o ${OBJECTDIR}/source/UBW.o ${OBJECTDIR}/source/usb_descriptors.o ${OBJECTDIR}/source/ebb_demo.o ${OBJECTDIR}/source/spi.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/_ext/343710134/usb_device.o.d ${OBJECTDIR}/_ext/131024517/usb_function_cdc.o.d ${OBJECTDIR}/source/ebb.o.d ${OBJECTDIR}/source/main.o.d ${OBJECTDIR}/source/RCServo2.o.d ${OBJECTDIR}/source/UBW.o.d ${OBJECTDIR}/source/usb_descriptors.o.d ${OBJECTDIR}/source/ebb_demo.o.d ${OBJECTDIR}/source/spi.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/_ext/343710134/usb_device.o ${OBJECTDIR}/_ext/131024517/usb_function_cdc.o ${OBJECTDIR}/source/ebb.o ${OBJECTDIR}/source/main.o ${OBJECTDIR}/source/RCServo2.o ${OBJECTDIR}/source/UBW.o ${OBJECTDIR}/source/usb_descriptors.o ${OBJECTDIR}/source/spi.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/_ext/343710134/usb_device.o.d ${OBJECTDIR}/_ext/131024517/usb_function_cdc.o.d ${OBJECTDIR}/source/ebb.o.d ${OBJECTDIR}/source/main.o.d ${OBJECTDIR}/source/RCServo2.o.d ${OBJECTDIR}/source/UBW.o.d ${OBJECTDIR}/source/usb_descriptors.o.d ${OBJECTDIR}/source/spi.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/_ext/343710134/usb_device.o ${OBJECTDIR}/_ext/131024517/usb_function_cdc.o ${OBJECTDIR}/source/ebb.o ${OBJECTDIR}/source/main.o ${OBJECTDIR}/source/RCServo2.o ${OBJECTDIR}/source/UBW.o ${OBJECTDIR}/source/usb_descriptors.o ${OBJECTDIR}/source/ebb_demo.o ${OBJECTDIR}/source/spi.o
+OBJECTFILES=${OBJECTDIR}/_ext/343710134/usb_device.o ${OBJECTDIR}/_ext/131024517/usb_function_cdc.o ${OBJECTDIR}/source/ebb.o ${OBJECTDIR}/source/main.o ${OBJECTDIR}/source/RCServo2.o ${OBJECTDIR}/source/UBW.o ${OBJECTDIR}/source/usb_descriptors.o ${OBJECTDIR}/source/spi.o
 
 # Source Files
-SOURCEFILES=../Microchip/USB/usb_device.c ../Microchip/USB/CDC Device Driver/usb_function_cdc.c source/ebb.c source/main.c source/RCServo2.c source/UBW.c source/usb_descriptors.c source/ebb_demo.c source/spi.c
+SOURCEFILES=../Microchip/USB/usb_device.c ../Microchip/USB/CDC Device Driver/usb_function_cdc.c source/ebb.c source/main.c source/RCServo2.c source/UBW.c source/usb_descriptors.c source/spi.c
 
 
 CFLAGS=
@@ -87,11 +87,11 @@ FIXDEPS=fixDeps
 ifneq ($(INFORMATION_MESSAGE), )
 	@echo $(INFORMATION_MESSAGE)
 endif
-	${MAKE}  -f nbproject/Makefile-EBBv13_with_bootloader.mk dist/${CND_CONF}/${IMAGE_TYPE}/app.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
+	${MAKE}  -f nbproject/Makefile-EBB_v40_with_bootloader.mk dist/${CND_CONF}/${IMAGE_TYPE}/app.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
 
 MP_PROCESSOR_OPTION=18F46J50
 MP_PROCESSOR_OPTION_LD=18f46j50
-MP_LINKER_DEBUG_OPTION=  -u_DEBUGSTACK
+MP_LINKER_DEBUG_OPTION=
 # ------------------------------------------------------------------------------------
 # Rules for buildStep: assemble
 ifeq ($(TYPE_IMAGE), DEBUG_RUN)
@@ -105,7 +105,7 @@ ${OBJECTDIR}/_ext/343710134/usb_device.o: ../Microchip/USB/usb_device.c  nbproje
 	@${MKDIR} "${OBJECTDIR}/_ext/343710134" 
 	@${RM} ${OBJECTDIR}/_ext/343710134/usb_device.o.d 
 	@${RM} ${OBJECTDIR}/_ext/343710134/usb_device.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V13_AND_ABOVE -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/_ext/343710134/usb_device.o   ../Microchip/USB/usb_device.c 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V40 -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/_ext/343710134/usb_device.o   ../Microchip/USB/usb_device.c 
 	@${DEP_GEN} -d ${OBJECTDIR}/_ext/343710134/usb_device.o 
 	@${FIXDEPS} "${OBJECTDIR}/_ext/343710134/usb_device.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
 	
@@ -113,7 +113,7 @@ ${OBJECTDIR}/_ext/131024517/usb_function_cdc.o: ../Microchip/USB/CDC\ Device\ Dr
 	@${MKDIR} "${OBJECTDIR}/_ext/131024517" 
 	@${RM} ${OBJECTDIR}/_ext/131024517/usb_function_cdc.o.d 
 	@${RM} ${OBJECTDIR}/_ext/131024517/usb_function_cdc.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V13_AND_ABOVE -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/_ext/131024517/usb_function_cdc.o   "../Microchip/USB/CDC Device Driver/usb_function_cdc.c" 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V40 -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/_ext/131024517/usb_function_cdc.o   "../Microchip/USB/CDC Device Driver/usb_function_cdc.c" 
 	@${DEP_GEN} -d ${OBJECTDIR}/_ext/131024517/usb_function_cdc.o 
 	@${FIXDEPS} "${OBJECTDIR}/_ext/131024517/usb_function_cdc.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
 	
@@ -121,7 +121,7 @@ ${OBJECTDIR}/source/ebb.o: source/ebb.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/source" 
 	@${RM} ${OBJECTDIR}/source/ebb.o.d 
 	@${RM} ${OBJECTDIR}/source/ebb.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V13_AND_ABOVE -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/ebb.o   source/ebb.c 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V40 -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/ebb.o   source/ebb.c 
 	@${DEP_GEN} -d ${OBJECTDIR}/source/ebb.o 
 	@${FIXDEPS} "${OBJECTDIR}/source/ebb.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
 	
@@ -129,7 +129,7 @@ ${OBJECTDIR}/source/main.o: source/main.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/source" 
 	@${RM} ${OBJECTDIR}/source/main.o.d 
 	@${RM} ${OBJECTDIR}/source/main.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V13_AND_ABOVE -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/main.o   source/main.c 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V40 -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/main.o   source/main.c 
 	@${DEP_GEN} -d ${OBJECTDIR}/source/main.o 
 	@${FIXDEPS} "${OBJECTDIR}/source/main.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
 	
@@ -137,7 +137,7 @@ ${OBJECTDIR}/source/RCServo2.o: source/RCServo2.c  nbproject/Makefile-${CND_CONF
 	@${MKDIR} "${OBJECTDIR}/source" 
 	@${RM} ${OBJECTDIR}/source/RCServo2.o.d 
 	@${RM} ${OBJECTDIR}/source/RCServo2.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V13_AND_ABOVE -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/RCServo2.o   source/RCServo2.c 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V40 -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/RCServo2.o   source/RCServo2.c 
 	@${DEP_GEN} -d ${OBJECTDIR}/source/RCServo2.o 
 	@${FIXDEPS} "${OBJECTDIR}/source/RCServo2.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
 	
@@ -145,7 +145,7 @@ ${OBJECTDIR}/source/UBW.o: source/UBW.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/source" 
 	@${RM} ${OBJECTDIR}/source/UBW.o.d 
 	@${RM} ${OBJECTDIR}/source/UBW.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V13_AND_ABOVE -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/UBW.o   source/UBW.c 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V40 -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/UBW.o   source/UBW.c 
 	@${DEP_GEN} -d ${OBJECTDIR}/source/UBW.o 
 	@${FIXDEPS} "${OBJECTDIR}/source/UBW.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
 	
@@ -153,23 +153,15 @@ ${OBJECTDIR}/source/usb_descriptors.o: source/usb_descriptors.c  nbproject/Makef
 	@${MKDIR} "${OBJECTDIR}/source" 
 	@${RM} ${OBJECTDIR}/source/usb_descriptors.o.d 
 	@${RM} ${OBJECTDIR}/source/usb_descriptors.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V13_AND_ABOVE -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/usb_descriptors.o   source/usb_descriptors.c 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V40 -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/usb_descriptors.o   source/usb_descriptors.c 
 	@${DEP_GEN} -d ${OBJECTDIR}/source/usb_descriptors.o 
 	@${FIXDEPS} "${OBJECTDIR}/source/usb_descriptors.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
-	
-${OBJECTDIR}/source/ebb_demo.o: source/ebb_demo.c  nbproject/Makefile-${CND_CONF}.mk
-	@${MKDIR} "${OBJECTDIR}/source" 
-	@${RM} ${OBJECTDIR}/source/ebb_demo.o.d 
-	@${RM} ${OBJECTDIR}/source/ebb_demo.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V13_AND_ABOVE -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/ebb_demo.o   source/ebb_demo.c 
-	@${DEP_GEN} -d ${OBJECTDIR}/source/ebb_demo.o 
-	@${FIXDEPS} "${OBJECTDIR}/source/ebb_demo.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
 	
 ${OBJECTDIR}/source/spi.o: source/spi.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/source" 
 	@${RM} ${OBJECTDIR}/source/spi.o.d 
 	@${RM} ${OBJECTDIR}/source/spi.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V13_AND_ABOVE -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/spi.o   source/spi.c 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V40 -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/spi.o   source/spi.c 
 	@${DEP_GEN} -d ${OBJECTDIR}/source/spi.o 
 	@${FIXDEPS} "${OBJECTDIR}/source/spi.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
 	
@@ -178,7 +170,7 @@ ${OBJECTDIR}/_ext/343710134/usb_device.o: ../Microchip/USB/usb_device.c  nbproje
 	@${MKDIR} "${OBJECTDIR}/_ext/343710134" 
 	@${RM} ${OBJECTDIR}/_ext/343710134/usb_device.o.d 
 	@${RM} ${OBJECTDIR}/_ext/343710134/usb_device.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V13_AND_ABOVE -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/_ext/343710134/usb_device.o   ../Microchip/USB/usb_device.c 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V40 -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/_ext/343710134/usb_device.o   ../Microchip/USB/usb_device.c 
 	@${DEP_GEN} -d ${OBJECTDIR}/_ext/343710134/usb_device.o 
 	@${FIXDEPS} "${OBJECTDIR}/_ext/343710134/usb_device.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
 	
@@ -186,7 +178,7 @@ ${OBJECTDIR}/_ext/131024517/usb_function_cdc.o: ../Microchip/USB/CDC\ Device\ Dr
 	@${MKDIR} "${OBJECTDIR}/_ext/131024517" 
 	@${RM} ${OBJECTDIR}/_ext/131024517/usb_function_cdc.o.d 
 	@${RM} ${OBJECTDIR}/_ext/131024517/usb_function_cdc.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V13_AND_ABOVE -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/_ext/131024517/usb_function_cdc.o   "../Microchip/USB/CDC Device Driver/usb_function_cdc.c" 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V40 -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/_ext/131024517/usb_function_cdc.o   "../Microchip/USB/CDC Device Driver/usb_function_cdc.c" 
 	@${DEP_GEN} -d ${OBJECTDIR}/_ext/131024517/usb_function_cdc.o 
 	@${FIXDEPS} "${OBJECTDIR}/_ext/131024517/usb_function_cdc.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
 	
@@ -194,7 +186,7 @@ ${OBJECTDIR}/source/ebb.o: source/ebb.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/source" 
 	@${RM} ${OBJECTDIR}/source/ebb.o.d 
 	@${RM} ${OBJECTDIR}/source/ebb.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V13_AND_ABOVE -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/ebb.o   source/ebb.c 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V40 -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/ebb.o   source/ebb.c 
 	@${DEP_GEN} -d ${OBJECTDIR}/source/ebb.o 
 	@${FIXDEPS} "${OBJECTDIR}/source/ebb.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
 	
@@ -202,7 +194,7 @@ ${OBJECTDIR}/source/main.o: source/main.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/source" 
 	@${RM} ${OBJECTDIR}/source/main.o.d 
 	@${RM} ${OBJECTDIR}/source/main.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V13_AND_ABOVE -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/main.o   source/main.c 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V40 -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/main.o   source/main.c 
 	@${DEP_GEN} -d ${OBJECTDIR}/source/main.o 
 	@${FIXDEPS} "${OBJECTDIR}/source/main.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
 	
@@ -210,7 +202,7 @@ ${OBJECTDIR}/source/RCServo2.o: source/RCServo2.c  nbproject/Makefile-${CND_CONF
 	@${MKDIR} "${OBJECTDIR}/source" 
 	@${RM} ${OBJECTDIR}/source/RCServo2.o.d 
 	@${RM} ${OBJECTDIR}/source/RCServo2.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V13_AND_ABOVE -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/RCServo2.o   source/RCServo2.c 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V40 -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/RCServo2.o   source/RCServo2.c 
 	@${DEP_GEN} -d ${OBJECTDIR}/source/RCServo2.o 
 	@${FIXDEPS} "${OBJECTDIR}/source/RCServo2.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
 	
@@ -218,7 +210,7 @@ ${OBJECTDIR}/source/UBW.o: source/UBW.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/source" 
 	@${RM} ${OBJECTDIR}/source/UBW.o.d 
 	@${RM} ${OBJECTDIR}/source/UBW.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V13_AND_ABOVE -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/UBW.o   source/UBW.c 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V40 -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/UBW.o   source/UBW.c 
 	@${DEP_GEN} -d ${OBJECTDIR}/source/UBW.o 
 	@${FIXDEPS} "${OBJECTDIR}/source/UBW.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
 	
@@ -226,23 +218,15 @@ ${OBJECTDIR}/source/usb_descriptors.o: source/usb_descriptors.c  nbproject/Makef
 	@${MKDIR} "${OBJECTDIR}/source" 
 	@${RM} ${OBJECTDIR}/source/usb_descriptors.o.d 
 	@${RM} ${OBJECTDIR}/source/usb_descriptors.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V13_AND_ABOVE -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/usb_descriptors.o   source/usb_descriptors.c 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V40 -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/usb_descriptors.o   source/usb_descriptors.c 
 	@${DEP_GEN} -d ${OBJECTDIR}/source/usb_descriptors.o 
 	@${FIXDEPS} "${OBJECTDIR}/source/usb_descriptors.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
-	
-${OBJECTDIR}/source/ebb_demo.o: source/ebb_demo.c  nbproject/Makefile-${CND_CONF}.mk
-	@${MKDIR} "${OBJECTDIR}/source" 
-	@${RM} ${OBJECTDIR}/source/ebb_demo.o.d 
-	@${RM} ${OBJECTDIR}/source/ebb_demo.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V13_AND_ABOVE -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/ebb_demo.o   source/ebb_demo.c 
-	@${DEP_GEN} -d ${OBJECTDIR}/source/ebb_demo.o 
-	@${FIXDEPS} "${OBJECTDIR}/source/ebb_demo.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
 	
 ${OBJECTDIR}/source/spi.o: source/spi.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/source" 
 	@${RM} ${OBJECTDIR}/source/spi.o.d 
 	@${RM} ${OBJECTDIR}/source/spi.o 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V13_AND_ABOVE -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/spi.o   source/spi.c 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION) -DBOARD_EBB_V40 -DPROGRAMMABLE_WITH_USB_HID_BOOTLOADER -I"../Microchip/Include" -I"../Microchip/Include/USB" -I"." -I"./source" -ms -oa- -Ls  -I ${MP_CC_DIR}\\..\\h  -fo ${OBJECTDIR}/source/spi.o   source/spi.c 
 	@${DEP_GEN} -d ${OBJECTDIR}/source/spi.o 
 	@${FIXDEPS} "${OBJECTDIR}/source/spi.o.d" $(SILENT) -rsi ${MP_CC_DIR}../ -c18 
 	
@@ -279,8 +263,8 @@ endif
 
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
-	${RM} -r build/EBBv13_with_bootloader
-	${RM} -r dist/EBBv13_with_bootloader
+	${RM} -r build/EBB_v40_with_bootloader
+	${RM} -r dist/EBB_v40_with_bootloader
 
 # Enable dependency checking
 .dep.inc: .depcheck-impl

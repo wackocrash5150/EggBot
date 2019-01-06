@@ -1,9 +1,9 @@
 /*********************************************************************
  *
- *                UBW Firmware
+ *                EiBotBoard Firmware
  *
  *********************************************************************
- * FileName:        HardwareProfile.h
+ * FileName:        HardwareProfile_EBB_V13_and_above.h
  * Company:         Schmalz Haus LLC
  * Author:          Brian Schmalz
  *
@@ -11,7 +11,7 @@
  *
  * Software License Agreement
  *
- * Copyright (c) 2014, Brian Schmalz of Schmalz Haus LLC
+ * Copyright (c) 2019, Brian Schmalz of Schmalz Haus LLC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or
@@ -51,71 +51,103 @@
 #ifndef HARDWARE_PROFILE_H
 #define HARDWARE_PROFILE_H
 
-#define DEMO_BOARD
+  /*******************************************************************/
+  /******** USB stack hardware selection options *********************/
+  /*******************************************************************/
+  //This section is the set of definitions required by the MCHPFSUSB
+  //  framework.  These definitions tell the firmware what mode it is
+  //  running in, and where it can find the results to some information
+  //  that the stack needs.
+  //These definitions are required by every application developed with
+  //  this revision of the MCHPFSUSB framework.  Please review each
+  //  option carefully and determine which options are desired/required
+  //  for your application.
 
-#if defined(UBW)
-	#include "HardwareProfile_UBW.h"
-#elif defined(BOARD_EBB_V10)
-	#include "HardwareProfile_EBB_V10.h"
-#elif defined(BOARD_EBB_V11)
-	#include "HardwareProfile_EBB_V11.h"
-#elif defined(BOARD_EBB_V12)
-	#include "HardwareProfile_EBB_V12.h"
-#elif defined(BOARD_EBB_V13_AND_ABOVE)
-	#include "HardwareProfile_EBB_V13_and_above.h"
-#elif defined(BOARD_EBB_V40)
-	#include "HardwareProfile_EBB_V40.h"
-#endif
+  //The PICDEM FS USB Demo Board platform supports the USE_SELF_POWER_SENSE_IO
+  //and USE_USB_BUS_SENSE_IO features.  Uncomment the below line(s) if
+  //it is desirable to use one or both of the features.
+  //#define USE_SELF_POWER_SENSE_IO
+  #define tris_self_power     TRISAbits.TRISA2    // Input
+  #if defined(USE_SELF_POWER_SENSE_IO)
+    #define self_power          PORTAbits.RA2
+  #else
+    #define self_power          1
+  #endif
 
-#if !defined(DEMO_BOARD)
-    #if defined(__C32__)
-        #if defined(__32MX460F512L__)
-            #if defined(PIC32MX460F512L_PIM)
-                #include "HardwareProfile - PIC32MX460F512L PIM.h"
-            #elif defined(PIC32_USB_STARTER_KIT)
-                #include "HardwareProfile - PIC32 USB Starter Kit.h"
-            #endif
-        #elif defined(__32MX795F512L__)
-            #if defined(PIC32MX795F512L_PIM)
-                #include "HardwareProfile - PIC32MX795F512L PIM.h"
-            #elif defined(PIC32_USB_STARTER_KIT)
-                //PIC32 USB Starter Kit II
-                #include "HardwareProfile - PIC32 USB Starter Kit.h"
-            #endif
-        #endif
-    #endif
+  #define USE_USB_BUS_SENSE_IO
+  #define tris_usb_bus_sense  TRISCbits.TRISC1    // Input
+  #if defined(USE_USB_BUS_SENSE_IO)
+    #define USB_BUS_SENSE       PORTCbits.RC1
+  #else
+    #define USB_BUS_SENSE       1
+  #endif
 
-    #if defined(__C30__)
-        #if defined(__PIC24FJ256GB110__)
-            #include "HardwareProfile - PIC24FJ256GB110 PIM.h"
-        #elif defined(__PIC24FJ256GB106__)
-            #include "HardwareProfile - PIC24F Starter Kit.h"
-        #elif defined(__PIC24FJ64GB004__)
-            #include "HardwareProfile - PIC24FJ64GB004 PIM.h"
-        #elif defined(__PIC24FJ256DA210__)
-            #include "HardwareProfile - PIC24FJ256DA210 Development Board.h"
-        #endif
-    #endif
+  //Uncomment the following line to make the output HEX of this  
+  //  project work with the MCHPUSB Bootloader    
+  //#define PROGRAMMABLE_WITH_USB_MCHPUSB_BOOTLOADER
 
-    #if defined(__18CXX)
-        #if defined(__18F4550)
-            #include "HardwareProfile - PICDEM FSUSB.h"
-        #elif defined(__18F87J50)
-            #include "HardwareProfile - PIC18F87J50 PIM.h"
-        #elif defined(__18F14K50)
-            #include "HardwareProfile - Low Pin Count USB Development Kit.h"
-        #elif defined(__18F46J50)
-            #if defined(PIC18F_STARTER_KIT_1)
-                #include "HardwareProfile - PIC18F Starter Kit 1.h"
-            #else
-                #include "HardwareProfile - PIC18F46J50 PIM.h"
-            #endif
-        #endif
-    #endif
-#endif
+  //Uncomment the following line to make the output HEX of this 
+  //  project work with the HID Bootloader
+  //#define PROGRAMMABLE_WITH_USB_HID_BOOTLOADER
 
-#if !defined(DEMO_BOARD)
-    #error "Demo board not defined.  Either define DEMO_BOARD for a custom board or select the correct processor for the demo board."
-#endif
+  /*******************************************************************/
+  /*******************************************************************/
+  /*******************************************************************/
+  /******** Application specific definitions *************************/
+  /*******************************************************************/
+  /*******************************************************************/
+  /*******************************************************************/
+
+  /** Board definition ***********************************************/
+  //These definitions will tell the main() function which board is
+  //  currently selected.  This will allow the application to add
+  //  the correct configuration bits as wells use the correct
+  //  initialization functions for the board.  These definitions are only
+  //  required in the stack provided demos.  They are not required in
+  //  final application design.
+  #define CLOCK_FREQ 48000000
+
+  /** L E D ***********************************************************/
+  /* On EBB v40, LED1 (USB) = RC6, LED2 (USR) = RD3, SW = RC7			*/
+  #define mInitAllLEDs()      LATDbits.LATD3 = 0; LATCbits.LATC6 = 0; TRISDbits.TRISD3 = 0; TRISCbits.TRISC6 = 0;
+  #define mLED_1              LATCbits.LATC6
+  #define mLED_2              LATDbits.LATD3
+
+  /** S W I T C H *****************************************************/
+  #define mInitSwitch()       TRISCbits.TRISC7 = INPUT_PIN;
+  #define swProgram           PORTCbits.RC7
+
+  /** R E F   A N A L O G   I N P U T *********************************/
+//  #define RefRA0_IO_TRIS      TRISAbits.TRISA0
+
+  /** P E N   U P  D O W N *******************************************/
+  #define PenUpDownIO         LATDbits.LATD5
+  #define PEN_UP_DOWN_RPN     22
+  #define PenUpDownIO_TRIS    TRISDbits.TRISD5
+
+  /** R C   S E R V O  ************************************************/
+  #define RCServoPowerIO_TRIS TRISDbits.TRISD7
+  #define RCServoPowerIO      LATDbits.LATD7
+  #define RCServoPowerIO_PORT PORTDbits.RD7
+  #define RCSERVO_POWER_ON    1
+  #define RCSERVO_POWER_OFF   0
+
+  /** G E N E R I C ***************************************************/
+
+  #define mLED_USB_Toggle()   mLED_1 = !mLED_1;
+
+  #define mLED_1_On()         mLED_1 = 1;
+  #define mLED_2_On()         mLED_2 = 1;
+
+  #define mLED_1_Off()        mLED_1 = 0;
+  #define mLED_2_Off()        mLED_2 = 0;
+
+  #define mLED_1_Toggle()     mLED_1 = !mLED_1;
+  #define mLED_2_Toggle()     mLED_2 = !mLED_2;
+
+  #define mLED_Both_Off()     {mLED_1_Off(); mLED_2_Off();}
+  #define mLED_Both_On()      {mLED_1_On(); mLED_2_On();}
+  #define mLED_Only_1_On()    {mLED_1_On(); mLED_2_Off();}
+  #define mLED_Only_2_On()    {mLED_1_Off(); mLED_2_On();}
 
 #endif  //HARDWARE_PROFILE_H

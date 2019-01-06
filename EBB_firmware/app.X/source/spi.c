@@ -2,32 +2,26 @@
 #include <ctype.h>
 #include "spi.h"
 
-
 void spi_init(void)
 {
-  // SCK1 is RB4
-  // SDI1 is RB5
-  // SDO1 is RC7
-  // SS1 is RA5
-  
   // Set up SPI2 and RP pins
   // Inputs
-  // SDI2 RPINR21    RC6 (RP17)
+  // SDI2 RPINR21    RB4 (RP7)
   // Outputs
-  // SDO2 9          RC0 (RP11)
-  // SCK2 10         RC2 (RP13)
-  // SS              RD1
+  // SDO2 9          RB5 (RP8)
+  // SCK2 10         RA0 (RP0)
+  // SS2             RA2
   
-  LATCbits.LATC2 = 0;           // Init SCK2 to idle state (low)
-  TRISCbits.TRISC2 = 0;         // Set SCK2 to be an output
-  TRISCbits.TRISC6 = 1;         // Set SDI2 to be an input
-  LATDbits.LATD1 = 1;           // Init SS2 to idle state (high)
-  TRISDbits.TRISD1 = 0;         // Set SS2 to be an output
-  TRISCbits.TRISC0 = 0;         // Set SDO2 to be an output
+  LATAbits.LATA0 = 0;           // Init SCK2 to idle state (low)
+  TRISAbits.TRISA0 = 0;         // Set SCK2 to be an output
+  TRISBbits.TRISB4 = 1;         // Set SDI2 to be an input
+  LATAbits.LATA2 = 1;           // Init SS2 to idle state (high)
+  TRISAbits.TRISA2 = 0;         // Set SS2 to be an output
+  TRISBbits.TRISB5 = 0;         // Set SDO2 to be an output
   
-  RPINR21 = 17;                 // Set SDI2 to use RP17 pin
-  RPOR11 = 9;                   // Set SDO2 to use RP11 pin
-  RPOR13 = 10;                  // Set SCK2 to use RP13 pin
+  RPINR21 = 7;                  // Set SDI2 to use RP7 pin
+  RPOR8 = 9;                    // Set SDO2 to use RP8 pin
+  RPOR0 = 10;                   // Set SCK2 to use RP0 pin
   
   SSP2STATbits.SMP = 0;         // Input data is sampled at middle of data output time
   SSP2STATbits.CKE = 0;         // Transmit occurs on idle to active clock edge

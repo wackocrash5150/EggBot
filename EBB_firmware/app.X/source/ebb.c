@@ -11,7 +11,7 @@
  *
  * Software License Agreement
  *
- * Copyright (c) 2014, Brian Schmalz of Schmalz Haus LLC
+ * Copyright (c) 2019, Brian Schmalz of Schmalz Haus LLC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or
@@ -49,69 +49,69 @@
  */
 // Versions:
 // 1.8 - 
-// 1.8.1 5/19/10 - Only change is to recompile with Microchip USB Stack v2.7
-// 1.8.2 5/31/10 - Only change is to change name in USB enumeration string to Ei
+// 1.8.1 5/19/10 -  Only change is to recompile with Microchip USB Stack v2.7
+// 1.8.2 5/31/10 -  Only change is to change name in USB enumeration string to Ei
 //                  Bot Board - using new PID for SchmalzHaus
-// 1.9   6/11/10 - Added two commands:
-//					SQ - Solenoid Query - returns 0 or 1 for down and up
-//					ST - Solenoid Toggle - toggles state of the servo/solenoid
-// 1.9.2 6/15/10 - Added commands:
-//					SC,11 sets pen up speed
-//					SC,12 sets pen down speed
-//					SL - sets the current layer
-//					QL - queries the current layer
-//					SN - sets move (node) count
-//					QN - Query node count
-//					QB - Query Button command
-// 1.9.3 6/16/10 - Replaced SN with CL (Clear Node) command
-// 1.9.4 6/22/10 - Node Count now incremented on pauses (SM with zero step size)
+// 1.9   6/11/10 -  Added two commands:
+//                  SQ - Solenoid Query - returns 0 or 1 for down and up
+//                  ST - Solenoid Toggle - toggles state of the servo/solenoid
+// 1.9.2 6/15/10 -  Added commands:
+//                  SC,11 sets pen up speed
+//                  SC,12 sets pen down speed
+//                  SL - sets the current layer
+//                  QL - queries the current layer
+//                  SN - sets move (node) count
+//                  QN - Query node count
+//                  QB - Query Button command
+// 1.9.3 6/16/10 -  Replaced SN with CL (Clear Node) command
+// 1.9.4 6/22/10 -  Node Count now incremented on pauses (SM with zero step size)
 //                  as well
-// 1.9.5 7/2/10 - Node count no longer incrimented at all except for NI command
-//					NI - Node count Incriment
-//					ND - Node count Decriment
-//					SN - Set Node count (with 8 byte variable)
-//					BL - With latest bootloader, will jumpt to Boot Load mode
-// 1.9.6 7/3/10 - Removed extra vectors below 0x1000 for easier merging of HEX
+// 1.9.5 7/2/10 -   Node count no longer incremented at all except for NI command
+//                  NI - Node count Increment
+//                  ND - Node count Decrement
+//                  SN - Set Node count (with 8 byte variable)
+//                  BL - With latest bootloader, will jump to Boot Load mode
+// 1.9.6 7/3/10 -   Removed extra vectors below 0x1000 for easier merging of HEX
 //                      files
-//					- use c018i_HID_BL.o now
-// 2.0.0 9/9/10 - Add in
-//					QC - Query Current - reads voltage of current adjustment pot
-//						NOTE: This is NOT done the 'right way'. Instead, we set
+//              -   use c018i_HID_BL.o now
+// 2.0.0 9/9/10 -   Add in
+//                  QC - Query Current - reads voltage of current adjustment pot
+//                      NOTE: This is NOT done the 'right way'. Instead, we set
 //                      up the pin for analog input at boot, then when the QC
 //                      comes in, we activate the ADC and take one reading and
 //                      then shut it down. Eventually, we should re-write the
 //                      'UBW' ADC routines to work with the much more flexible
 //                      ADC in the 46J50 part and then just use that generic
 //                      code for reading the value of the pot.
-//					SC,13,{0,1} - enables/disables RB0 as another PRG button for
+//                  SC,13,{0,1} - enables/disables RB0 as another PRG button for
 //                      pause detection
-// 2.0.1 9/13/10 - Bug fix - on v1.1 EBB hardware, need to disable RB0 alt pause
+// 2.0.1 9/13/10 -  Bug fix - on v1.1 EBB hardware, need to disable RB0 alt pause
 //                      button.
-//					switched it to RB2 on v1.1 hardware
-// 2.0.2 10/3/10 - Bug fix - QC command not returning proper results - added
+//                      switched it to RB2 on v1.1 hardware
+// 2.0.2 10/3/10 -  Bug fix - QC command not returning proper results - added
 //                      cast and now works OK
-// 2.1.0 10/21/10- Added in
-//					SE - Set Engraver - turns engraver (on RB3) on or off, or
+// 2.1.0 10/21/10-  Added in
+//                  SE - Set Engraver - turns engraver (on RB3) on or off, or
 //                      set to PWM power level
-// 				   Added code in init to pre-charge RC7 (USB_SENSE_IO) high
+//                  Added code in init to pre-charge RC7 (USB_SENSE_IO) high
 //                      before running rest of code
-//					to get around wrong resistor value on hardware.
-// 2.1.1 11/21/10- Removed Microchip USB stack v2.7, replaced it with v2.8 from 
-//                  MAL 2010_10_19.
-//					Also using generic Microchip folder now rather than re-named
+//                      to get around wrong resistor value on hardware.
+// 2.1.1 11/21/10-  Removed Microchip USB stack v2.7, replaced it with v2.8 from 
+//                      MAL 2010_10_19.
+//                  Also using generic Microchip folder now rather than re-named
 //                      one (simpler to update).
-//				   Updated code in main.c (and others) to match updates from 
+//                  Updated code in main.c (and others) to match updates from 
 //                      latest MAL CDC example.
 // 2.1.1cTest1 01/17/11 - Added third parameter to SP command to use any PortB 
 //                      pin for servo output.
 //                 For this version only - used PortB2 as standard servo output
-// 2.1.1d 02/11/11 - Reverted back to RB1 for servo output
-//                 - Updated check_and_send_TX_data() to allow unlimited data to
+// 2.1.1d 02/11/11 -  Reverted back to RB1 for servo output
+//                 -  Updated check_and_send_TX_data() to allow unlimited data to
 //                      go out without overrunning the output buffer, same as
 //                      UBW 1.4.7.
 // 2.1.2 11/04/11 - Fixed PI command to return just a 0 or a 1
 //                - Updated to USB stack 2.9a
-//                - Created MPLAB X project for this firmware
+//                -   Created MPLAB X project for this firmware
 //                - Added SC,14,<state> to enable/disable solenoid output on RB4
 //                - Fixed bug with S2 command and solenoid command interaction -
 //                      we now turn off solenoid output on RB4 if user uses S2
@@ -245,7 +245,6 @@
 #include "ubw.h"
 #include "ebb.h"
 #include "delays.h"
-#include "ebb_demo.h"
 #include "RCServo2.h"
 
 // This is the value that gets multiplied by Steps/Duration to compute
@@ -259,22 +258,22 @@
 
 typedef enum
 {
-	SOLENOID_OFF = 0,
-	SOLENOID_ON,
-	SOLENOID_PWM
+  SOLENOID_OFF = 0,
+  SOLENOID_ON,
+  SOLENOID_PWM
 } SolenoidStateType;
 
 static void process_SM(
-	UINT32 Duration,
-	INT32 A1Stp,
-	INT32 A2Stp
+  UINT32 Duration,
+  INT32 A1Stp,
+  INT32 A2Stp
 );
 
 typedef enum
 {
-	PIC_CONTROLS_DRIVERS = 0,
-	PIC_CONTROLS_EXTERNAL,
-    EXTERNAL_CONTROLS_DRIVERS
+  PIC_CONTROLS_DRIVERS = 0,
+  PIC_CONTROLS_EXTERNAL,
+  EXTERNAL_CONTROLS_DRIVERS
 } DriverConfigurationType;
 
 // Working registers
@@ -320,470 +319,294 @@ BOOL gLimitChecks = TRUE;
 #pragma interrupt high_ISR
 void high_ISR(void)
 {
-	//Check which interrupt flag caused the interrupt.
-	//Service the interrupt
-	//Clear the interrupt flag
-	//Etc.
-	#if defined(USB_INTERRUPT)
-		USBDeviceTasks();
-	#endif
+  //Check which interrupt flag caused the interrupt.
+  //Service the interrupt
+  //Clear the interrupt flag
+  //Etc.
+  #if defined(USB_INTERRUPT)
+    USBDeviceTasks();
+  #endif
 
-    // 25KHz ISR fire
-	if (PIR1bits.TMR1IF)
-	{
-		// Clear the interrupt 
-		PIR1bits.TMR1IF = 0;
-		TMR1H = TIMER1_H_RELOAD;	//
-		TMR1L = TIMER1_L_RELOAD;	// Reload for 25KHz ISR fire
+  // 25KHz ISR fire
+  if (PIR1bits.TMR1IF)
+  {
+    // Clear the interrupt 
+    PIR1bits.TMR1IF = 0;
+    TMR1H = TIMER1_H_RELOAD;  //
+    TMR1L = TIMER1_L_RELOAD;  // Reload for 25KHz ISR fire
 
-		OutByte = CurrentCommand.DirBits;
-		TookStep = FALSE;
-		AllDone = TRUE;
+    OutByte = CurrentCommand.DirBits;
+    TookStep = FALSE;
+    AllDone = TRUE;
 
-        // Note, you don't even need a command to delay. Any command can have
-        // a delay associated with it, if DelayCounter is != 0.
-        if (CurrentCommand.DelayCounter)
+    // Note, you don't even need a command to delay. Any command can have
+    // a delay associated with it, if DelayCounter is != 0.
+    if (CurrentCommand.DelayCounter)
+    {
+      // Double check that things aren't way too big
+      if (CurrentCommand.DelayCounter > HIGH_ISR_TICKS_PER_MS * (UINT32)0x10000)
+      {
+        CurrentCommand.DelayCounter = 0;
+      }
+      else {
+        CurrentCommand.DelayCounter--;
+      }
+    }
+
+    if (CurrentCommand.DelayCounter)
+    {
+      AllDone = FALSE;
+    }
+
+    // Note: by not making this an else-if, we have our DelayCounter
+    // counting done at the same time as our motor move or servo move.
+    // This allows the delay time to start counting at the beginning of the
+    // command execution.
+    if (CurrentCommand.Command == COMMAND_MOTOR_MOVE)
+    {
+    }
+    // Check to see if we should change the state of the pen
+    else if (CurrentCommand.Command == COMMAND_SERVO_MOVE)
+    {
+      if (gUseRCPenServo)
+      {
+        // Precompute the channel, since we use it all over the place
+        UINT8 Channel = CurrentCommand.ServoChannel - 1;
+
+        // This code below is the meat of the RCServo2_Move() function
+        // We have to manually write it in here rather than calling
+        // the function because a real function inside the ISR
+        // causes the compiler to generate enormous amounts of setup/teardown
+        // code and things run way too slowly.
+
+        // If the user is trying to turn off this channel's RC servo output
+        if (0 == CurrentCommand.ServoPosition)
         {
-            // Double check that things aren't way too big
-            if (CurrentCommand.DelayCounter > HIGH_ISR_TICKS_PER_MS * (UINT32)0x10000)
-            {
-                CurrentCommand.DelayCounter = 0;
-            }
-            else {
-                CurrentCommand.DelayCounter--;
-            }            
+          // Turn off the PPS routing to the pin
+          *(gRC2RPORPtr + gRC2RPn[Channel]) = 0;
+          // Clear everything else out for this channel
+          gRC2Rate[Channel] = 0;
+          gRC2Target[Channel] = 0;
+          gRC2RPn[Channel] = 0;
+          gRC2Value[Channel] = 0;
         }
-
-        if (CurrentCommand.DelayCounter)
+        else
         {
-            AllDone = FALSE;
+          // Otherwise, set all of the values that start this RC servo moving
+          gRC2Rate[Channel] = CurrentCommand.ServoRate;
+          gRC2Target[Channel] = CurrentCommand.ServoPosition;
+          gRC2RPn[Channel] = CurrentCommand.ServoRPn;
+          if (gRC2Value[Channel] == 0)
+          {
+            gRC2Value[Channel] = CurrentCommand.ServoPosition;
+          }
         }
+      }
 
-        // Not sure why this is here? For debugging? If so, then #ifdef it out for release build
-        //PORTDbits.RD1 = 0;
-
-        // Note: by not making this an else-if, we have our DelayCounter
-        // counting done at the same time as our motor move or servo move.
-        // This allows the delay time to start counting at the beginning of the
-        // command execution.
-        if (CurrentCommand.Command == COMMAND_MOTOR_MOVE)
-		{
-            // Only output DIR bits if we are actually doing something
-			if (CurrentCommand.StepsCounter[0] || CurrentCommand.StepsCounter[1])
-            {
-				if (DriverConfiguration == PIC_CONTROLS_DRIVERS)
-				{
-					if (CurrentCommand.DirBits & DIR1_BIT)
-					{
-						Dir1IO = 1;
-					}
-					else
-					{
-						Dir1IO = 0;
-					}	
-					if (CurrentCommand.DirBits & DIR2_BIT)
-					{
-						Dir2IO = 1;
-					}
-					else
-					{
-						Dir2IO = 0;
-					}	
-				}
-                else if (DriverConfiguration == PIC_CONTROLS_EXTERNAL)
-				{
-					if (CurrentCommand.DirBits & DIR1_BIT)
-					{
-						Dir1AltIO = 1;
-					}
-					else
-					{
-						Dir1AltIO = 0;
-					}	
-					if (CurrentCommand.DirBits & DIR2_BIT)
-					{
-						Dir2AltIO = 1;
-					}
-					else
-					{
-						Dir2AltIO = 0;
-					}	
-				}
-
-				// Only do this if there are steps left to take
-				if (CurrentCommand.StepsCounter[0])
-				{
-					StepAcc[0] = StepAcc[0] + CurrentCommand.StepAdd[0];
-					if (StepAcc[0] & 0x80000000)
-					{
-						StepAcc[0] = StepAcc[0] & 0x7FFFFFFF;
-						OutByte = OutByte | STEP1_BIT;
-						TookStep = TRUE;
-						CurrentCommand.StepsCounter[0]--;
-                        if (CurrentCommand.DirBits & DIR1_BIT)
-                        {
-                            globalStepCounter1--;
-                        }
-                        else
-                        {
-                            globalStepCounter1++;
-                        }	
-					}
-                    // For acceleration, we now add a bit to StepAdd each time through as well
-                    CurrentCommand.StepAdd[0] += CurrentCommand.StepAddInc[0];
-					AllDone = FALSE;
-				}
-				if (CurrentCommand.StepsCounter[1])
-				{
-					StepAcc[1] = StepAcc[1] + CurrentCommand.StepAdd[1];
-					if (StepAcc[1] & 0x80000000)
-					{
-						StepAcc[1] = StepAcc[1] & 0x7FFFFFFF;
-						OutByte = OutByte | STEP2_BIT;
-						TookStep = TRUE;
-						CurrentCommand.StepsCounter[1]--;
-                        if (CurrentCommand.DirBits & DIR2_BIT)
-                        {
-                            globalStepCounter2--;
-                        }
-                        else
-                        {
-                            globalStepCounter2++;
-                        }
-                    }
-                    // For acceleration, we now add a bit to StepAdd each time through as well
-                    CurrentCommand.StepAdd[1] += CurrentCommand.StepAddInc[1];
-					AllDone = FALSE;
-				}
-
-				if (TookStep)
-				{
-					if (DriverConfiguration == PIC_CONTROLS_DRIVERS)
-					{
-						if (OutByte & STEP1_BIT)
-						{
-							Step1IO = 1;
-						}
-						if (OutByte & STEP2_BIT)
-						{
-							Step2IO = 1;
-						}
-					}
-                    else if (DriverConfiguration == PIC_CONTROLS_EXTERNAL)
-					{
-						if (OutByte & STEP1_BIT)
-						{
-							Step1AltIO = 1;
-						}
-						if (OutByte & STEP2_BIT)
-						{
-							Step2AltIO = 1;
-						}
-					}
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					Delay1TCY();
-					if (DriverConfiguration == PIC_CONTROLS_DRIVERS)
-					{
-						Step1IO = 0;
-						Step2IO = 0;
-					}
-                    else if (DriverConfiguration == PIC_CONTROLS_EXTERNAL)
-					{
-						Step1AltIO = 0;
-						Step2AltIO = 0;
-					}
-				}
-			}
+      // If this servo is the pen servo (on g_servo2_RPn)
+      if (CurrentCommand.ServoRPn == g_servo2_RPn)
+      {
+        // Then set its new state based on the new position
+        if (CurrentCommand.ServoPosition == g_servo2_min)
+        {
+          PenState = PEN_UP;
+          SolenoidState = SOLENOID_OFF;
+          if (gUseSolenoid)
+          {
+            PenUpDownIO = 0;
+          }
         }
-        // Check to see if we should change the state of the pen
-		else if (CurrentCommand.Command == COMMAND_SERVO_MOVE)
-		{
-            if (gUseRCPenServo)
-            {
-                // Precompute the channel, since we use it all over the place
-                UINT8 Channel = CurrentCommand.ServoChannel - 1;
-
-                // This code below is the meat of the RCServo2_Move() function
-                // We have to manually write it in here rather than calling
-                // the function because a real function inside the ISR
-                // causes the compiler to generate enormous amounts of setup/teardown
-                // code and things run way too slowly.
-
-                // If the user is trying to turn off this channel's RC servo output
-                if (0 == CurrentCommand.ServoPosition)
-                {
-                    // Turn off the PPS routing to the pin
-                    *(gRC2RPORPtr + gRC2RPn[Channel]) = 0;
-                    // Clear everything else out for this channel
-                    gRC2Rate[Channel] = 0;
-                    gRC2Target[Channel] = 0;
-                    gRC2RPn[Channel] = 0;
-                    gRC2Value[Channel] = 0;
-                }
-                else
-                {
-                    // Otherwise, set all of the values that start this RC servo moving
-                    gRC2Rate[Channel] = CurrentCommand.ServoRate;
-                    gRC2Target[Channel] = CurrentCommand.ServoPosition;
-                    gRC2RPn[Channel] = CurrentCommand.ServoRPn;
-                    if (gRC2Value[Channel] == 0)
-                    {
-                        gRC2Value[Channel] = CurrentCommand.ServoPosition;
-                    }
-                }
-            }
-            
-            // If this servo is the pen servo (on g_servo2_RPn)
-            if (CurrentCommand.ServoRPn == g_servo2_RPn)
-            {
-                // Then set its new state based on the new position
-                if (CurrentCommand.ServoPosition == g_servo2_min)
-                {
-                    PenState = PEN_UP;
-                    SolenoidState = SOLENOID_OFF;
-                    if (gUseSolenoid)
-                    {
-                        PenUpDownIO = 0;
-                    }
-                }
-                else
-                {
-                    PenState = PEN_DOWN;
-                    SolenoidState = SOLENOID_ON;
-                    if (gUseSolenoid)
-                    {
-                        PenUpDownIO = 1;
-                    }
-                }
-            }
-		}
-        // Check to see if we should start or stop the engraver
-		else if (CurrentCommand.Command == COMMAND_SE)
-		{
-            // Now act on the State of the SE command
-            if (CurrentCommand.SEState)
-            {
-                // Set RB3 to StoredEngraverPower
-                CCPR1L = CurrentCommand.SEPower >> 2;
-                CCP1CON = (CCP1CON & 0b11001111) | ((StoredEngraverPower << 4) & 0b00110000);
-            }
-            else
-            {
-                // Set RB3 to low by setting PWM duty cycle to zero
-                CCPR1L = 0;
-                CCP1CON = (CCP1CON & 0b11001111);
-            }
-            AllDone = TRUE;
+        else
+        {
+          PenState = PEN_DOWN;
+          SolenoidState = SOLENOID_ON;
+          if (gUseSolenoid)
+          {
+            PenUpDownIO = 1;
+          }
         }
-        
-		// If we're done with our current command, load in the next one
-		if (AllDone && CurrentCommand.DelayCounter == 0)
-		{
-			CurrentCommand.Command = COMMAND_NONE;
-			if (!FIFOEmpty)
-			{
-                CurrentCommand = CommandFIFO[0];
-                // Zero out command in FIFO
-                CommandFIFO[0].Command = COMMAND_NONE;
-                CommandFIFO[0].StepAdd[0] = 0;
-                CommandFIFO[0].StepAdd[1] = 0;
-                CommandFIFO[0].StepsCounter[0] = 0;
-                CommandFIFO[0].StepsCounter[1] = 0;
-                CommandFIFO[0].DirBits = 0;
-                CommandFIFO[0].DelayCounter = 0;
-                CommandFIFO[0].ServoPosition = 0;
-                CommandFIFO[0].ServoRPn = 0;
-                CommandFIFO[0].ServoChannel = 0;
-                CommandFIFO[0].ServoRate = 0;
-                CommandFIFO[0].SEState = 0;
-                CommandFIFO[0].SEPower = 0;
-				FIFOEmpty = TRUE;
-			}
-            else {
-                CurrentCommand.DelayCounter = 0;
-            }
-		}
-		
-		// Check for button being pushed
-		if (
-			(!swProgram)
-			||
-			(
-				UseAltPause
-				&&
-				!PORTBbits.RB0
-			)
-		)
-		{
-			ButtonPushed = TRUE;
-		}
-	}
+      }
+    }
+    // Check to see if we should start or stop the engraver
+    else if (CurrentCommand.Command == COMMAND_SE)
+    {
+      // Now act on the State of the SE command
+      if (CurrentCommand.SEState)
+      {
+        // Set RB3 to StoredEngraverPower
+        CCPR1L = CurrentCommand.SEPower >> 2;
+        CCP1CON = (CCP1CON & 0b11001111) | ((StoredEngraverPower << 4) & 0b00110000);
+      }
+      else
+      {
+        // Set RB3 to low by setting PWM duty cycle to zero
+        CCPR1L = 0;
+        CCP1CON = (CCP1CON & 0b11001111);
+      }
+      AllDone = TRUE;
+    }
+
+    // If we're done with our current command, load in the next one
+    if (AllDone && CurrentCommand.DelayCounter == 0)
+    {
+      CurrentCommand.Command = COMMAND_NONE;
+      if (!FIFOEmpty)
+      {
+        CurrentCommand = CommandFIFO[0];
+        // Zero out command in FIFO
+        CommandFIFO[0].Command = COMMAND_NONE;
+        CommandFIFO[0].StepAdd[0] = 0;
+        CommandFIFO[0].StepAdd[1] = 0;
+        CommandFIFO[0].StepsCounter[0] = 0;
+        CommandFIFO[0].StepsCounter[1] = 0;
+        CommandFIFO[0].DirBits = 0;
+        CommandFIFO[0].DelayCounter = 0;
+        CommandFIFO[0].ServoPosition = 0;
+        CommandFIFO[0].ServoRPn = 0;
+        CommandFIFO[0].ServoChannel = 0;
+        CommandFIFO[0].ServoRate = 0;
+        CommandFIFO[0].SEState = 0;
+        CommandFIFO[0].SEPower = 0;
+        FIFOEmpty = TRUE;
+      }
+      else 
+      {
+          CurrentCommand.DelayCounter = 0;
+      }
+    }
+
+    // Check for button being pushed
+    if (
+      (!swProgram)
+      ||
+      (
+        UseAltPause
+        &&
+        !PORTBbits.RB0
+      )
+    )
+    {
+      ButtonPushed = TRUE;
+    }
+  }
 }
 
 // Init code
 void EBB_Init(void)
 {
-    char i;
+  char i;
 
-    // Initialize all Current Command values
-    for (i = 0; i < NUMBER_OF_STEPPERS; i++)
-    {
-        CurrentCommand.StepAdd[i] = 1;
-        CurrentCommand.StepsCounter[i] = 0;
-        CurrentCommand.StepAddInc[i] = 0;
-    }
-    CurrentCommand.Command = COMMAND_NONE;
-    CurrentCommand.DirBits = 0;
-    CurrentCommand.DelayCounter = 0;
-    CurrentCommand.ServoPosition = 0;
-    CurrentCommand.ServoRPn = 0;
-    CurrentCommand.ServoChannel = 0;
-    CurrentCommand.ServoRate = 0;
+  // Initialize all Current Command values
+  for (i = 0; i < NUMBER_OF_STEPPERS; i++)
+  {
+    CurrentCommand.StepAdd[i] = 1;
+    CurrentCommand.StepsCounter[i] = 0;
+    CurrentCommand.StepAddInc[i] = 0;
+  }
+  CurrentCommand.Command = COMMAND_NONE;
+  CurrentCommand.DirBits = 0;
+  CurrentCommand.DelayCounter = 0;
+  CurrentCommand.ServoPosition = 0;
+  CurrentCommand.ServoRPn = 0;
+  CurrentCommand.ServoChannel = 0;
+  CurrentCommand.ServoRate = 0;
 
-    FIFOEmpty = TRUE;
+  FIFOEmpty = TRUE;
 
-	// Set up TMR1 for our 25KHz High ISR for stepping
-	T1CONbits.RD16 = 1; 	// Set 16 bit mode
-	T1CONbits.TMR1CS1 = 0; 	// System clocked from Fosc/4
-	T1CONbits.TMR1CS0 = 0;
-	T1CONbits.T1CKPS1 = 0; 	// Use 1:1 Prescale value
-	T1CONbits.T1CKPS0 = 0;
-	T1CONbits.T1OSCEN = 0; 	// Don't use external osc
-	T1CONbits.T1SYNC = 0;
-	TMR1H = TIMER1_H_RELOAD;	//
-	TMR1L = TIMER1_L_RELOAD;	// Reload for 25Khz ISR fire
+  // Set up TMR1 for our 25KHz High ISR for stepping
+  T1CONbits.RD16 = 1; 	// Set 16 bit mode
+  T1CONbits.TMR1CS1 = 0; 	// System clocked from Fosc/4
+  T1CONbits.TMR1CS0 = 0;
+  T1CONbits.T1CKPS1 = 0; 	// Use 1:1 Prescale value
+  T1CONbits.T1CKPS0 = 0;
+  T1CONbits.T1OSCEN = 0; 	// Don't use external osc
+  T1CONbits.T1SYNC = 0;
+  TMR1H = TIMER1_H_RELOAD;	//
+  TMR1L = TIMER1_L_RELOAD;	// Reload for 25Khz ISR fire
 
-	T1CONbits.TMR1ON = 1; // Turn the timer on
+  T1CONbits.TMR1ON = 1; // Turn the timer on
 
-	IPR1bits.TMR1IP = 1;	// Use high priority interrupt
-	PIR1bits.TMR1IF = 0;	// Clear the interrupt
-	PIE1bits.TMR1IE = 1;	// Turn on the interrupt
+  IPR1bits.TMR1IP = 1;	// Use high priority interrupt
+  PIR1bits.TMR1IF = 0;	// Clear the interrupt
+  PIE1bits.TMR1IE = 1;	// Turn on the interrupt
 
-//	PORTA = 0;
-	RefRA0_IO_TRIS = INPUT_PIN;
-//	PORTB = 0;
-//	INTCON2bits.RBPU = 0;	// Turn on weak-pull ups for port B
+//  PORTA = 0;
+//  RefRA0_IO_TRIS = INPUT_PIN;
+//  PORTB = 0;
+  INTCON2bits.RBPU = 0;	// Turn on weak-pull ups for port B
 //	PORTC = 0;		// Start out low
-//	TRISC = 0x80;	// Make portC output execpt for PortC bit 7, USB bus sense
-//	PORTD = 0;
-//	TRISD = 0;
-//	PORTE = 0;
-//	TRISE = 0;
+//  TRISC = 0x02;	// Make portC output except for PortC bit 1, USB bus sense
+//  PORTD = 0;
+//  TRISD = 0;
+//  PORTE = 0;
+//  TRISE = 0;
 
-    // And make sure to always use low priority for ADC
-    IPR1bits.ADIP = 0;
-    
-    // Turn on AN0 (RA0) as analog input
-    AnalogConfigure(0,1);
-    // Turn on AN11 (V+) as analog input
-    AnalogConfigure(11,1);
+  // And make sure to always use low priority for ADC
+  IPR1bits.ADIP = 0;
 
-	MS1_IO = 1;
-	MS1_IO_TRIS = OUTPUT_PIN;
-	MS2_IO = 1;
-	MS2_IO_TRIS = OUTPUT_PIN;
-	MS3_IO	= 1;
-	MS3_IO_TRIS = OUTPUT_PIN;
+  // Turn on AN10 (V+) as analog input
+  AnalogConfigure(10,1);
 
-	Enable1IO = 1;	
-	Enable1IO_TRIS = OUTPUT_PIN;	
-	Enable2IO = 1;
-	Enable2IO_TRIS = OUTPUT_PIN;
+  // For bug in VUSB divider resistor, set RC7 as output and set high
+  // Wait a little while to charge up
+  // Then set back as an input
+  // The idea here is to get the schmidt trigger input RC7 high before
+  // we make it an input, thus getting it above the 2.65V ST threshold
+  // And allowing VUSB to keep the logic level on the pin high at 2.5V
+  #if defined(USE_USB_BUS_SENSE_IO)
+    tris_usb_bus_sense = OUTPUT_PIN; // See HardwareProfile.h
+    USB_BUS_SENSE = 1;
+    Delay1TCY();
+    Delay1TCY();
+    Delay1TCY();
+    Delay1TCY();
+    Delay1TCY();
+    Delay1TCY();
+    Delay1TCY();
+    Delay1TCY();
+    Delay1TCY();
+    Delay1TCY();
+    Delay1TCY();
+    Delay1TCY();
+    Delay1TCY();
+    Delay1TCY();
+    Delay1TCY();
+    Delay1TCY();
+    Delay1TCY();
+    Delay1TCY();
+    Delay1TCY();
+    tris_usb_bus_sense = INPUT_PIN;
+    USB_BUS_SENSE = 0;
+  #endif
+  gUseSolenoid = TRUE;
+  gUseRCPenServo = TRUE;
 
-	Step1IO	= 0;
-	Step1IO_TRIS = OUTPUT_PIN;
-	Dir1IO = 0;
-	Dir1IO_TRIS = OUTPUT_PIN;
-	Step2IO	= 0;	
-	Step2IO_TRIS = OUTPUT_PIN;	
-	Dir2IO = 0;	
-	Dir2IO_TRIS = OUTPUT_PIN;
+  // Set up pen up/down direction as output
+  PenUpDownIO = 0;
+  PenUpDownIO_TRIS = OUTPUT_PIN;
 
-	// For bug in VUSB divider resistor, set RC7 as output and set high
-	// Wait a little while to charge up
-	// Then set back as an input
-	// The idea here is to get the schmidt trigger input RC7 high before
-	// we make it an input, thus getting it above the 2.65V ST threshold
-	// And allowing VUSB to keep the logic level on the pin high at 2.5V
-    #if defined(USE_USB_BUS_SENSE_IO)
-	    tris_usb_bus_sense = OUTPUT_PIN; // See HardwareProfile.h
-    	USB_BUS_SENSE = 1;
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		Delay1TCY();
-		tris_usb_bus_sense = INPUT_PIN;
-		USB_BUS_SENSE = 0;
-	#endif
-    gUseSolenoid = TRUE;
-    gUseRCPenServo = TRUE;
+  // Set up RC Servo power control to be off
+  RCServoPowerIO = RCSERVO_POWER_OFF;
+  RCServoPowerIO_TRIS = OUTPUT_PIN;
 
-    // Set up pen up/down direction as output
-	PenUpDownIO = 0;
-	PenUpDownIO_TRIS = OUTPUT_PIN;
-    
-    // Set up RC Servo power control to be off
-    RCServoPowerIO = RCSERVO_POWER_OFF;
-    RCServoPowerIO_TRIS = OUTPUT_PIN;
+  SolenoidState = SOLENOID_ON;
+  DriverConfiguration = PIC_CONTROLS_DRIVERS;
+  PenState = PEN_UP;
+  Layer = 0;
+  NodeCount = 0;
+  ButtonPushed = FALSE;
+  // Default RB0 to be an input, with the pull-up enabled, for use as alternate
+  // PAUSE button (just like PRG)
+  // Except for v1.1 hardware, use RB2
+/// TRISBbits.TRISB0 = 1;
+/// INTCON2bits.RBPU = 0;	// Turn on all of PortB pull-ups
+  UseAltPause = TRUE;
 
-	SolenoidState = SOLENOID_ON;
-	DriverConfiguration = PIC_CONTROLS_DRIVERS;
-	PenState = PEN_UP;
-	Layer = 0;
-	NodeCount = 0;
-	ButtonPushed = FALSE;
-	// Default RB0 to be an input, with the pull-up enabled, for use as alternate
-	// PAUSE button (just like PRG)
-	// Except for v1.1 hardware, use RB2
-	TRISBbits.TRISB0 = 1;
-	INTCON2bits.RBPU = 0;	// Turn on all of PortB pull-ups
-	UseAltPause = TRUE;
+///	TRISBbits.TRISB3 = 0;		// Make RB3 an output (for engraver)
+///	PORTBbits.RB3 = 0;          // And make sure it starts out off
 
-	TRISBbits.TRISB3 = 0;		// Make RB3 an output (for engraver)
-	PORTBbits.RB3 = 0;          // And make sure it starts out off
-    
-    // Clear out global stepper positions
-    parse_CS_packet();
+  // Clear out global stepper positions
+  parse_CS_packet();
 }
 
 // Stepper (mode) Configure command
@@ -812,101 +635,101 @@ void EBB_Init(void)
 // SC,13,0<CR> disables RB3 as parallel input to PRG button for pause detection
 void parse_SC_packet (void)
 {
-	unsigned char Para1 = 0;
-	unsigned int Para2 = 0;
+  unsigned char Para1 = 0;
+  unsigned int Para2 = 0;
 
-	// Extract each of the values.
-	extract_number (kUCHAR, &Para1, kREQUIRED);
-	extract_number (kUINT, &Para2, kREQUIRED);
+  // Extract each of the values.
+  extract_number (kUCHAR, &Para1, kREQUIRED);
+  extract_number (kUINT, &Para2, kREQUIRED);
 
-	// Bail if we got a conversion error
-	if (error_byte)
-	{
-		return;
-	}
+  // Bail if we got a conversion error
+  if (error_byte)
+  {
+    return;
+  }
 
-	// Check for command to select which (solenoid/servo) gets used for pen
-	if (Para1 == 1)
-	{
-        // Use just solenoid
-		if (Para2 == 0)
-		{
-            gUseSolenoid = TRUE;
-            gUseRCPenServo = FALSE;
-            // Turn off RC signal on Pen Servo output
-            RCServo2_Move(0, g_servo2_RPn, 0, 0);
-        }
-        // Use just RC servo
-		else if (Para2 == 1)
-		{
-            gUseSolenoid = FALSE;
-            gUseRCPenServo = TRUE;
-		}
-        // Use solenoid AND servo (default)
-		else
-		{
-            gUseSolenoid = TRUE;
-            gUseRCPenServo = TRUE;
-		}
-        // Send a new command to set the state of the servo/solenoid
-		process_SP(PenState, 0);
-	}
-	// Check for command to switch between built-in drivers and external drivers
-	else if (Para1 == 2)
-	{
-		if (Para2 == 0)
-		{
-			DriverConfiguration = PIC_CONTROLS_DRIVERS;
-            // Connections to drivers become outputs
-            Enable1IO_TRIS = OUTPUT_PIN;
-            Enable2IO_TRIS = OUTPUT_PIN;
-            Step1IO_TRIS = OUTPUT_PIN;
-            Dir1IO_TRIS = OUTPUT_PIN;
-            Step2IO_TRIS = OUTPUT_PIN;
-            Dir2IO_TRIS = OUTPUT_PIN;
-			// Alternate I/O pins become inputs
-			Dir1AltIO_TRIS = INPUT_PIN;
-			Dir2AltIO_TRIS = INPUT_PIN;
-			Step1AltIO_TRIS = INPUT_PIN;
-			Step2AltIO_TRIS = INPUT_PIN;
-			Enable1AltIO_TRIS = INPUT_PIN;
-			Enable2AltIO_TRIS = INPUT_PIN;
-		}
-		else if (Para2 == 1)
-		{
-			DriverConfiguration = PIC_CONTROLS_EXTERNAL;
-            // Connections to drivers become inputs
-            Enable1IO_TRIS = INPUT_PIN;
-            Enable2IO_TRIS = INPUT_PIN;
-            Step1IO_TRIS = INPUT_PIN;
-            Dir1IO_TRIS = INPUT_PIN;
-            Step2IO_TRIS = INPUT_PIN;
-            Dir2IO_TRIS = INPUT_PIN;
-			// Alternate I/O pins become outputs
-			Dir1AltIO_TRIS = OUTPUT_PIN;
-			Dir2AltIO_TRIS = OUTPUT_PIN;
-			Step1AltIO_TRIS = OUTPUT_PIN;
-			Step2AltIO_TRIS = OUTPUT_PIN;
-			Enable1AltIO_TRIS = OUTPUT_PIN;
-			Enable2AltIO_TRIS = OUTPUT_PIN;
-		}
-        else if (Para2 == 2)
-        {
-            DriverConfiguration = EXTERNAL_CONTROLS_DRIVERS;
-            // Connections to drivers become inputs
-            Enable1IO_TRIS = INPUT_PIN;
-            Enable2IO_TRIS = INPUT_PIN;
-            Step1IO_TRIS = INPUT_PIN;
-            Dir1IO_TRIS = INPUT_PIN;
-            Step2IO_TRIS = INPUT_PIN;
-            Dir2IO_TRIS = INPUT_PIN;
-   			// Alternate I/O pins become inputs
-			Dir1AltIO_TRIS = INPUT_PIN;
-			Dir2AltIO_TRIS = INPUT_PIN;
-			Step1AltIO_TRIS = INPUT_PIN;
-			Step2AltIO_TRIS = INPUT_PIN;
-			Enable1AltIO_TRIS = INPUT_PIN;
-			Enable2AltIO_TRIS = INPUT_PIN;
+  // Check for command to select which (solenoid/servo) gets used for pen
+  if (Para1 == 1)
+  {
+    // Use just solenoid
+    if (Para2 == 0)
+    {
+      gUseSolenoid = TRUE;
+      gUseRCPenServo = FALSE;
+      // Turn off RC signal on Pen Servo output
+      RCServo2_Move(0, g_servo2_RPn, 0, 0);
+    }
+    // Use just RC servo
+    else if (Para2 == 1)
+    {
+      gUseSolenoid = FALSE;
+      gUseRCPenServo = TRUE;
+    }
+    // Use solenoid AND servo (default)
+    else
+    {
+      gUseSolenoid = TRUE;
+      gUseRCPenServo = TRUE;
+    }
+    // Send a new command to set the state of the servo/solenoid
+    process_SP(PenState, 0);
+  }
+  // Check for command to switch between built-in drivers and external drivers
+  else if (Para1 == 2)
+  {
+    if (Para2 == 0)
+    {
+      DriverConfiguration = PIC_CONTROLS_DRIVERS;
+      // Connections to drivers become outputs
+//      Enable1IO_TRIS = OUTPUT_PIN;
+//      Enable2IO_TRIS = OUTPUT_PIN;
+//      Step1IO_TRIS = OUTPUT_PIN;
+//      Dir1IO_TRIS = OUTPUT_PIN;
+//      Step2IO_TRIS = OUTPUT_PIN;
+//      Dir2IO_TRIS = OUTPUT_PIN;
+      // Alternate I/O pins become inputs
+//      Dir1AltIO_TRIS = INPUT_PIN;
+//      Dir2AltIO_TRIS = INPUT_PIN;
+//      Step1AltIO_TRIS = INPUT_PIN;
+//      Step2AltIO_TRIS = INPUT_PIN;
+//      Enable1AltIO_TRIS = INPUT_PIN;
+//      Enable2AltIO_TRIS = INPUT_PIN;
+    }
+    else if (Para2 == 1)
+    {
+      DriverConfiguration = PIC_CONTROLS_EXTERNAL;
+      // Connections to drivers become inputs
+//      Enable1IO_TRIS = INPUT_PIN;
+//      Enable2IO_TRIS = INPUT_PIN;
+//      Step1IO_TRIS = INPUT_PIN;
+//      Dir1IO_TRIS = INPUT_PIN;
+//      Step2IO_TRIS = INPUT_PIN;
+//      Dir2IO_TRIS = INPUT_PIN;
+      // Alternate I/O pins become outputs
+//      Dir1AltIO_TRIS = OUTPUT_PIN;
+//      Dir2AltIO_TRIS = OUTPUT_PIN;
+//      Step1AltIO_TRIS = OUTPUT_PIN;
+//      Step2AltIO_TRIS = OUTPUT_PIN;
+//      Enable1AltIO_TRIS = OUTPUT_PIN;
+//      Enable2AltIO_TRIS = OUTPUT_PIN;
+    }
+    else if (Para2 == 2)
+    {
+      DriverConfiguration = EXTERNAL_CONTROLS_DRIVERS;
+      // Connections to drivers become inputs
+//      Enable1IO_TRIS = INPUT_PIN;
+//      Enable2IO_TRIS = INPUT_PIN;
+//      Step1IO_TRIS = INPUT_PIN;
+//      Dir1IO_TRIS = INPUT_PIN;
+//      Step2IO_TRIS = INPUT_PIN;
+//      Dir2IO_TRIS = INPUT_PIN;
+      // Alternate I/O pins become inputs
+//			Dir1AltIO_TRIS = INPUT_PIN;
+//			Dir2AltIO_TRIS = INPUT_PIN;
+//			Step1AltIO_TRIS = INPUT_PIN;
+//			Step2AltIO_TRIS = INPUT_PIN;
+//			Enable1AltIO_TRIS = INPUT_PIN;
+//			Enable2AltIO_TRIS = INPUT_PIN;
      }
 	}
 	// Set <min_servo> for Servo2 method
@@ -1003,106 +826,106 @@ void fprint(float f)
 // axies velocities.
 void parse_AM_packet (void)
 {
-    UINT32 temp = 0;
-	UINT16 VelocityInital = 0;
-	UINT16 VelocityFinal = 0;
-	INT32 A1Steps = 0, A2Steps = 0;
-    UINT32 Duration = 0;
-    UINT32 Distance;
-    float distance_temp;
-    float accel_temp;
+  UINT32 temp = 0;
+  UINT16 VelocityInital = 0;
+  UINT16 VelocityFinal = 0;
+  INT32 A1Steps = 0, A2Steps = 0;
+  UINT32 Duration = 0;
+  UINT32 Distance;
+  float distance_temp;
+  float accel_temp;
 
-	// Extract each of the values.
-	extract_number (kULONG, &VelocityInital, kREQUIRED);
-	extract_number (kULONG, &VelocityFinal, kREQUIRED);
-	extract_number (kLONG, &A1Steps, kREQUIRED);
-	extract_number (kLONG, &A2Steps, kREQUIRED);
+  // Extract each of the values.
+  extract_number (kULONG, &VelocityInital, kREQUIRED);
+  extract_number (kULONG, &VelocityFinal, kREQUIRED);
+  extract_number (kLONG, &A1Steps, kREQUIRED);
+  extract_number (kLONG, &A2Steps, kREQUIRED);
 
-    // Check for too-fast step request (>25KHz)
-    if (VelocityInital > 25000)
-    {
-       printf((far rom char *)"!0 Err: <velocity_initial> larger than 25000.\n\r");
-       return;
-    }
-    if (VelocityFinal > 25000)
-    {
-       printf((far rom char *)"!0 Err: <velocity_final> larger than 25000.\n\r");
-       return;
-    }
-    if (VelocityInital < 4)
-    {
-       printf((far rom char *)"!0 Err: <velocity_initial> less than 4.\n\r");
-       return;
-    }
-    if (VelocityFinal < 4)
-    {
-       printf((far rom char *)"!0 Err: <velocity_final> less than 4.\n\r");
-       return;
-    }
-    
-    // Bail if we got a conversion error
-	if (error_byte)
-	{
-		return;
-	}
-    
-    // Compute total pen distance
+  // Check for too-fast step request (>25KHz)
+  if (VelocityInital > 25000)
+  {
+    printf((far rom char *)"!0 Err: <velocity_initial> larger than 25000.\n\r");
+    return;
+  }
+  if (VelocityFinal > 25000)
+  {
+    printf((far rom char *)"!0 Err: <velocity_final> larger than 25000.\n\r");
+    return;
+  }
+  if (VelocityInital < 4)
+  {
+    printf((far rom char *)"!0 Err: <velocity_initial> less than 4.\n\r");
+    return;
+  }
+  if (VelocityFinal < 4)
+  {
+    printf((far rom char *)"!0 Err: <velocity_final> less than 4.\n\r");
+    return;
+  }
+
+  // Bail if we got a conversion error
+  if (error_byte)
+  {
+    return;
+  }
+
+  // Compute total pen distance
 //    fprint(ftemp);
-    Distance = (UINT32)(sqrt((float)((A1Steps * A1Steps) + (A2Steps * A2Steps))));
-    
+  Distance = (UINT32)(sqrt((float)((A1Steps * A1Steps) + (A2Steps * A2Steps))));
+
 // For debug
 //printf((far rom char *)"Distance= %lu\n\r", Distance);
-    
-    while(!FIFOEmpty);
 
-	CommandFIFO[0].DelayCounter = 0; // No delay for motor moves
-	CommandFIFO[0].DirBits = 0;
-		
-    // Always enable both motors when we want to move them
-    Enable1IO = ENABLE_MOTOR;
-    Enable2IO = ENABLE_MOTOR;
-    RCServoPowerIO = RCSERVO_POWER_ON;
-    gRCServoPoweroffCounterMS = gRCServoPoweroffCounterReloadMS;
+  while(!FIFOEmpty);
 
-    // First, set the direction bits
-    if (A1Steps < 0)
-    {
-        CommandFIFO[0].DirBits = DIR1_BIT;
-        A1Steps = -A1Steps;
-    }
-    if (A2Steps < 0)
-    {
-        CommandFIFO[0].DirBits = CommandFIFO[0].DirBits | DIR2_BIT;
-        A2Steps = -A2Steps;
-    }
+  CommandFIFO[0].DelayCounter = 0; // No delay for motor moves
+  CommandFIFO[0].DirBits = 0;
 
-    if (A1Steps > 0xFFFFFF) {
-       printf((far rom char *)"!0 Err: <axis1> larger than 16777215 steps.\n\r");
-       return;
-    }
-    if (A2Steps > 0xFFFFFF) {
-       printf((far rom char *)"!0 Err: <axis2> larger than 16777215 steps.\n\r");
-       return;
-    }
+  // Always enable both motors when we want to move them
+//    Enable1IO = ENABLE_MOTOR;
+//    Enable2IO = ENABLE_MOTOR;
+  RCServoPowerIO = RCSERVO_POWER_ON;
+  gRCServoPoweroffCounterMS = gRCServoPoweroffCounterReloadMS;
 
-    // To compute StepAdd values from Duration.
-    // A1Stp is from 0x000001 to 0xFFFFFF.
-    // HIGH_ISR_TICKS_PER_MS = 25
-    // Duration is from 0x000001 to 0xFFFFFF.
-    // temp needs to be from 0x0001 to 0x7FFF.
-    // Temp is added to accumulator every 25KHz. So slowest step rate
-    // we can do is 1 step every 25KHz / 0x7FFF or 1 every 763mS. 
-    // Fastest step rate is obviously 25KHz.
-    // If A1Stp is 1, then duration must be 763 or less.
-    // If A1Stp is 2, then duration must be 763 * 2 or less.
-    // If A1Stp is 0xFFFFFF, then duration must be at least 671088.
+  // First, set the direction bits
+  if (A1Steps < 0)
+  {
+///    CommandFIFO[0].DirBits = DIR1_BIT;
+    A1Steps = -A1Steps;
+  }
+  if (A2Steps < 0)
+  {
+///    CommandFIFO[0].DirBits = CommandFIFO[0].DirBits | DIR2_BIT;
+    A2Steps = -A2Steps;
+  }
+
+  if (A1Steps > 0xFFFFFF) {
+    printf((far rom char *)"!0 Err: <axis1> larger than 16777215 steps.\n\r");
+    return;
+  }
+  if (A2Steps > 0xFFFFFF) {
+    printf((far rom char *)"!0 Err: <axis2> larger than 16777215 steps.\n\r");
+    return;
+  }
+
+  // To compute StepAdd values from Duration.
+  // A1Stp is from 0x000001 to 0xFFFFFF.
+  // HIGH_ISR_TICKS_PER_MS = 25
+  // Duration is from 0x000001 to 0xFFFFFF.
+  // temp needs to be from 0x0001 to 0x7FFF.
+  // Temp is added to accumulator every 25KHz. So slowest step rate
+  // we can do is 1 step every 25KHz / 0x7FFF or 1 every 763mS. 
+  // Fastest step rate is obviously 25KHz.
+  // If A1Stp is 1, then duration must be 763 or less.
+  // If A1Stp is 2, then duration must be 763 * 2 or less.
+  // If A1Stp is 0xFFFFFF, then duration must be at least 671088.
 
 //    Duration = 2000;
 //    Distance = 600;
 //    Acceleration = 200;
 //    VelocityInital = 100;
 //    VelocityFinal = 500;
-    
+
     /* Compute StepAdd Axis 1 Initial */
 //    temp = ((UINT32)A1Steps*(((UINT32)VelocityInital * (UINT32)0x8000)/(UINT32)25000)/(UINT32)Distance);
 //printf((far rom char *)"VelocityInital = %d\n\r", VelocityInital);
@@ -1116,14 +939,14 @@ void parse_AM_packet (void)
 //    temp = (UINT32)ftemp;
 
 
-    /* Amount to add to accumulator each 25KHz */
-    CommandFIFO[0].StepAdd[0] = (UINT32)(distance_temp * (float)A1Steps);
+  /* Amount to add to accumulator each 25KHz */
+  CommandFIFO[0].StepAdd[0] = (UINT32)(distance_temp * (float)A1Steps);
 
 // For debug
 //printf((far rom char *)"SAxi = %lu\n\r", CommandFIFO[0].StepAdd[0]);
 
-    /* Total number of steps for this axis for this move */
-    CommandFIFO[0].StepsCounter[0] = A1Steps;
+  /* Total number of steps for this axis for this move */
+  CommandFIFO[0].StepsCounter[0] = A1Steps;
 
 //    ftemp = (float)VelocityFinal * 2147483648.0;
 //    fprint(ftemp);
@@ -1137,20 +960,20 @@ void parse_AM_packet (void)
 
 // For debug
 //printf((far rom char *)"SAxf = %lu\n\r", temp);
-    
-    /* Compute StepAddInc for axis 1 */
-    accel_temp = (((float)VelocityFinal * (float)VelocityFinal) - ((float)VelocityInital * (float)VelocityInital))/((float)Distance * (float)Distance * 2);
+
+  /* Compute StepAddInc for axis 1 */
+  accel_temp = (((float)VelocityFinal * (float)VelocityFinal) - ((float)VelocityInital * (float)VelocityInital))/((float)Distance * (float)Distance * 2);
 //    Accel1 = ((float)A1Steps * accel_temp);
 //printf((far rom char *)"accel_temp : ");
 //fprint(accel_temp);
 //    stemp = (INT32)((Accel1 * (float)0x8000 * (float)0x10000)/((float)25000 * (float)25000));
 //    stemp = (INT32)(Accel1 * 343.59738);
-    //printf((far rom char *)"SAxinc = %ld\n\r", stemp);
+  //printf((far rom char *)"SAxinc = %ld\n\r", stemp);
 
-    /* Amount to add to StepAdd each 25KHz */
-    CommandFIFO[0].StepAddInc[0] = (INT32)(((float)A1Steps * accel_temp) * 3.435921);
+  /* Amount to add to StepAdd each 25KHz */
+  CommandFIFO[0].StepAddInc[0] = (INT32)(((float)A1Steps * accel_temp) * 3.435921);
 
-    /* Compute StepAdd Axis 2 Initial */
+  /* Compute StepAdd Axis 2 Initial */
 //    temp = ((UINT32)A2Steps*(((UINT32)VelocityInital * (UINT32)0x8000)/(UINT32)25000)/(UINT32)Distance);
 //    temp = (UINT32)((float)A2Steps*(((float)VelocityInital * (float)0x80000000)/(float)25000)/(float)Distance);
 
@@ -1166,38 +989,38 @@ void parse_AM_packet (void)
 //    ftemp = ftemp * A2Steps;
 //    fprint(ftemp);
 //    temp = (UINT32)ftemp;
-    
+
 // For debug
 //printf((far rom char *)"SAyi = %lu\n\r", temp);
 
-    CommandFIFO[0].StepAdd[1] = (UINT32)(distance_temp * A2Steps);
-    CommandFIFO[0].StepsCounter[1] = A2Steps;
-    
-    /* Compute StepAddInc for axis 2 */
+  CommandFIFO[0].StepAdd[1] = (UINT32)(distance_temp * A2Steps);
+  CommandFIFO[0].StepsCounter[1] = A2Steps;
+
+  /* Compute StepAddInc for axis 2 */
 //    Accel2 = ((float)A2Steps * accel_temp);
 //printf((far rom char *)"Accel2 : ");
 //fprint(Accel2);
 //    stemp = (INT32)((Accel2 * (float)0x8000 * (float)0x10000)/((float)25000 * (float)25000));
 //    stemp = (INT32)(((float)A2Steps * accel_temp) * 343.59738);
-    
-    CommandFIFO[0].StepAddInc[1] = (INT32)(((float)A2Steps * accel_temp) * 3.435921);
 
-    if (VelocityInital != VelocityFinal && CommandFIFO[0].StepAddInc[0] == 0 && CommandFIFO[0].StepsCounter[0] > 0)
-    {
-       printf((far rom char *)"!0 Err: <axis1> acceleration value is 0.\n\r");
-       return;
-    }
-    if (VelocityInital != VelocityFinal && CommandFIFO[0].StepAddInc[1] == 0 && CommandFIFO[0].StepsCounter[1] > 0)
-    {
-       printf((far rom char *)"!0 Err: <axis2> acceleration value is 0.\n\r");
-       return;
-    }
+  CommandFIFO[0].StepAddInc[1] = (INT32)(((float)A2Steps * accel_temp) * 3.435921);
 
-    CommandFIFO[0].Command = COMMAND_MOTOR_MOVE;
-    
-	FIFOEmpty = FALSE;
-    
-	print_ack();
+  if (VelocityInital != VelocityFinal && CommandFIFO[0].StepAddInc[0] == 0 && CommandFIFO[0].StepsCounter[0] > 0)
+  {
+     printf((far rom char *)"!0 Err: <axis1> acceleration value is 0.\n\r");
+     return;
+  }
+  if (VelocityInital != VelocityFinal && CommandFIFO[0].StepAddInc[1] == 0 && CommandFIFO[0].StepsCounter[1] > 0)
+  {
+     printf((far rom char *)"!0 Err: <axis2> acceleration value is 0.\n\r");
+     return;
+  }
+
+  CommandFIFO[0].Command = COMMAND_MOTOR_MOVE;
+
+  FIFOEmpty = FALSE;
+
+  print_ack();
 }
 
 // Low Level Move command
@@ -1245,20 +1068,20 @@ void parse_LM_packet (void)
     move.DirBits = 0;
 
     // Always enable both motors when we want to move them
-    Enable1IO = ENABLE_MOTOR;
-    Enable2IO = ENABLE_MOTOR;
+//    Enable1IO = ENABLE_MOTOR;
+//    Enable2IO = ENABLE_MOTOR;
     RCServoPowerIO = RCSERVO_POWER_ON;
     gRCServoPoweroffCounterMS = gRCServoPoweroffCounterReloadMS;
 
     // First, set the direction bits
     if (StepsCounter1 < 0)
     {
-        move.DirBits = move.DirBits | DIR1_BIT;
+///        move.DirBits = move.DirBits | DIR1_BIT;
         StepsCounter1 = -StepsCounter1;
     }
     if (StepsCounter2 < 0)
     {
-        move.DirBits = move.DirBits | DIR2_BIT;
+///        move.DirBits = move.DirBits | DIR2_BIT;
         StepsCounter2 = -StepsCounter2;
     }
 
@@ -1509,22 +1332,22 @@ static void process_SM(
 		move.DirBits = 0;
 		
 		// Always enable both motors when we want to move them
-		Enable1IO = ENABLE_MOTOR;
-		Enable2IO = ENABLE_MOTOR;
+//		Enable1IO = ENABLE_MOTOR;
+//		Enable2IO = ENABLE_MOTOR;
         RCServoPowerIO = RCSERVO_POWER_ON;
         gRCServoPoweroffCounterMS = gRCServoPoweroffCounterReloadMS;
 
-		// First, set the direction bits
-		if (A1Stp < 0)
-		{
-			move.DirBits = move.DirBits | DIR1_BIT;
-			A1Stp = -A1Stp;
-		}
-		if (A2Stp < 0)
-		{
-			move.DirBits = move.DirBits | DIR2_BIT;
-			A2Stp = -A2Stp;
-		}
+    // First, set the direction bits
+    if (A1Stp < 0)
+    {
+///      move.DirBits = move.DirBits | DIR1_BIT;
+      A1Stp = -A1Stp;
+    }
+    if (A2Stp < 0)
+    {
+///      move.DirBits = move.DirBits | DIR2_BIT;
+      A2Stp = -A2Stp;
+    }
         // To compute StepAdd values from Duration.
         // A1Stp is from 0x000001 to 0xFFFFFF.
         // HIGH_ISR_TICKS_PER_MS = 25
@@ -1762,7 +1585,7 @@ void parse_TP_packet(void)
 // This is a command that the user can send from the PC to set the pen state.
 // Note that there is only one pen RC servo output - if you use the <PortB_Pin>
 // parameter, then that new pin becomes the pen RC servo output. This command
-// does not allow for mulitple servo signals at the same time from port B pins.
+// does not allow for multiple servo signals at the same time from port B pins.
 // Use the S2 command for that.
 //
 // This function will use the values for <serv_min>, <servo_max>,
@@ -1776,7 +1599,7 @@ void parse_SP_packet(void)
 {
 	UINT8 State = 0;
 	UINT16 CommandDuration = 0;
-	UINT8 Pin = DEFAULT_EBB_SERVO_PORTB_PIN;
+	UINT8 Pin = DEFAULT_EBB_SERVO_PORTD_PIN;
     ExtractReturnType Ret;
 
 	// Extract each of the values.
@@ -1793,7 +1616,7 @@ void parse_SP_packet(void)
     // Error check
 	if (Pin > 7)
 	{
-		Pin = DEFAULT_EBB_SERVO_PORTB_PIN;
+		Pin = DEFAULT_EBB_SERVO_PORTD_PIN;
 	}
 
     if (State > 1)
@@ -1898,46 +1721,46 @@ void parse_EM_packet(void)
 			{
 				if (DriverConfiguration == PIC_CONTROLS_DRIVERS)
                 {
-                    Enable1IO = ENABLE_MOTOR;
+//                    Enable1IO = ENABLE_MOTOR;
                     RCServoPowerIO = RCSERVO_POWER_ON;
                     gRCServoPoweroffCounterMS = gRCServoPoweroffCounterReloadMS;
                 }
 				if (EA1 == 1)
 				{
-					MS1_IO = 1;
-					MS2_IO = 1;
-					MS3_IO = 1;
+//					MS1_IO = 1;
+//					MS2_IO = 1;
+//					MS3_IO = 1;
 				}
 				if (EA1 == 2)
 				{
-					MS1_IO = 1;
-					MS2_IO = 1;
-					MS3_IO = 0;
+//					MS1_IO = 1;
+//					MS2_IO = 1;
+//					MS3_IO = 0;
 				}
 				if (EA1 == 3)
 				{
-					MS1_IO = 0;
-					MS2_IO = 1;
-					MS3_IO = 0;
+//					MS1_IO = 0;
+//					MS2_IO = 1;
+//					MS3_IO = 0;
 				}
 				if (EA1 == 4)
 				{
-					MS1_IO = 1;
-					MS2_IO = 0;
-					MS3_IO = 0;
+//					MS1_IO = 1;
+//					MS2_IO = 0;
+//					MS3_IO = 0;
 				}				
 				if (EA1 == 5)
 				{
-					MS1_IO = 0;
-					MS2_IO = 0;
-					MS3_IO = 0;
+//					MS1_IO = 0;
+//					MS2_IO = 0;
+//					MS3_IO = 0;
 				}				
 			}
 			else
 			{
 				if (DriverConfiguration == PIC_CONTROLS_DRIVERS)
                 {
-    				Enable1IO = DISABLE_MOTOR;
+//    				Enable1IO = DISABLE_MOTOR;
                 }
 			}
 		}
@@ -1945,13 +1768,13 @@ void parse_EM_packet(void)
 		{
 			if (EA1 > 0)
 			{
-				Enable1AltIO = ENABLE_MOTOR;
+//				Enable1AltIO = ENABLE_MOTOR;
                 RCServoPowerIO = RCSERVO_POWER_ON;
                 gRCServoPoweroffCounterMS = gRCServoPoweroffCounterReloadMS;
 			}
 			else
 			{
-				Enable1AltIO = DISABLE_MOTOR;
+//				Enable1AltIO = DISABLE_MOTOR;
 			}
 		}
 	}
@@ -1968,26 +1791,26 @@ void parse_EM_packet(void)
 		{
 			if (EA2 > 0)
 			{
-				Enable2IO = ENABLE_MOTOR;
+//				Enable2IO = ENABLE_MOTOR;
                 RCServoPowerIO = RCSERVO_POWER_ON;
                 gRCServoPoweroffCounterMS = gRCServoPoweroffCounterReloadMS;
 			}
 			else
 			{
-				Enable2IO = DISABLE_MOTOR;
+//				Enable2IO = DISABLE_MOTOR;
 			}
 		}
         else if (DriverConfiguration == PIC_CONTROLS_EXTERNAL)
 		{
 			if (EA2 > 0)
 			{
-				Enable2AltIO = ENABLE_MOTOR;
+//				Enable2AltIO = ENABLE_MOTOR;
                 RCServoPowerIO = RCSERVO_POWER_ON;
                 gRCServoPoweroffCounterMS = gRCServoPoweroffCounterReloadMS;
 			}
 			else
 			{
-				Enable2AltIO = DISABLE_MOTOR;
+//				Enable2AltIO = DISABLE_MOTOR;
 			}
 		}
 	}

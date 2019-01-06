@@ -31,7 +31,7 @@ DEFAULTCONF=EBB_v40_with_bootloader
 CONF=${DEFAULTCONF}
 
 # All Configurations
-ALLCONFS=EBBv13_with_bootloader EBBv13_no_bootloader EBBv13_XC8_no_bootloader EBBv13_XC8_with_bootloader EBBv13_45J50_with_bootloader EBB_v40_with_bootloader 
+ALLCONFS=EBB_v40_with_bootloader 
 
 
 # build
@@ -45,22 +45,12 @@ ALLCONFS=EBBv13_with_bootloader EBBv13_no_bootloader EBBv13_XC8_no_bootloader EB
 
 # clobber
 .clobber-impl: .clobber-pre .depcheck-impl
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=EBBv13_with_bootloader clean
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=EBBv13_no_bootloader clean
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=EBBv13_XC8_no_bootloader clean
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=EBBv13_XC8_with_bootloader clean
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=EBBv13_45J50_with_bootloader clean
 	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=EBB_v40_with_bootloader clean
 
 
 
 # all
 .all-impl: .all-pre .depcheck-impl
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=EBBv13_with_bootloader build
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=EBBv13_no_bootloader build
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=EBBv13_XC8_no_bootloader build
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=EBBv13_XC8_with_bootloader build
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=EBBv13_45J50_with_bootloader build
 	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=EBB_v40_with_bootloader build
 
 

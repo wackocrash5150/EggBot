@@ -91,9 +91,7 @@
 #include "HardwareProfile.h"
 #include "UBW.h"
 #include "ebb.h"
-#if defined(BOARD_EBB_V11) || defined(BOARD_EBB_V12) || defined(BOARD_EBB_V13_AND_ABOVE)
-	#include "RCServo2.h"
-#endif
+#include "RCServo2.h"
 #include "spi.h"
 
 /** D E F I N E S ********************************************************/
@@ -152,17 +150,7 @@ const rom char st_OK[] = {"OK\r\n"};
 const rom char st_LFCR[] = {"\r\n"};
 
 /// TODO: Can we make this cleaner? Maybe using macros or something? One version number and one board rev.
-#if defined(BOARD_EBB_V10)
-	const rom char st_version[] = {"EBBv10 EB Firmware Version 2.2.1\r\n"};
-#elif defined(BOARD_EBB_V11)
-	const rom char st_version[] = {"EBBv11 EB Firmware Version 2.2.1\r\n"};
-#elif defined(BOARD_EBB_V12)
-	const rom char st_version[] = {"EBBv12 EB Firmware Version 2.2.1\r\n"};
-#elif defined(BOARD_EBB_V13_AND_ABOVE)
-	const rom char st_version[] = {"EBBv4 Firmware Version 4.0.0t1\r\n"};
-#elif defined(BOARD_UBW)
-	const rom char st_version[] = {"UBW EB Firmware Version 2.2.1\r\n"};
-#endif
+const rom char st_version[] = {"EBBv4 Firmware Version 4.0.0t1\r\n"};
 
 #pragma udata ISR_buf = 0x100
 volatile unsigned int ISR_A_FIFO[16];                       // Stores the most recent analog conversions
@@ -632,165 +620,148 @@ void low_ISR(void)
 
 void UserInit(void)
 {
-	int  i, j;
+  int  i, j;
 
-	// Make all of 3 digital inputs
-	LATA = 0x00;
-	TRISA = 0xFF;
-	// Turn all analog inputs into digital inputs
+  // Make all of 3 digital inputs
+  LATA = 0x00;
+  TRISA = 0xFF;
+  // Turn all analog inputs into digital inputs
 //	ADCON1 = 0x0F;
-	// Turn off the ADC
+  // Turn off the ADC
 //	ADCON0bits.ADON = 0;
-	// Turn off our own idea of how many analog channels to convert
-	AnalogEnabledChannels = 0;
-	// Make all of PORTB inputs
-	LATB = 0x00;
-	TRISB = 0xFF;
-	// Make all of PORTC inputs
-	LATC = 0x00;
-	TRISC = 0xFF;
-	// Make all of PORTD and PORTE inputs too
-#if defined(BOARD_EBB_V10)
-	LATD = 0x00;
-	TRISD = 0xFF;
-	LATE = 0x00;
-	TRISE = 0xFF;
-	LATF = 0x00;
-	TRISF = 0xFF;
-	LATG = 0x00;
-	TRISG = 0xFF;
-	LATH = 0x00;
-	TRISH = 0xFF;
-	LATJ = 0x00;
-	TRISJ = 0xFF;
-#endif
+  // Turn off our own idea of how many analog channels to convert
+  AnalogEnabledChannels = 0;
+  // Make all of PORTB inputs
+  LATB = 0x00;
+  TRISB = 0xFF;
+  // Make all of PORTC inputs
+  LATC = 0x00;
+  TRISC = 0xFF;
 
-	// Initalize LED I/Os to outputs
-    mInitAllLEDs();
-	// Initalize switch as an input
-    mInitSwitch();
+  // Initialize LED I/Os to outputs
+  mInitAllLEDs();
+  // Initialize switch as an input
+  mInitSwitch();
 
-	// Start off always using "OK" acknoledge.
-	g_ack_enable = TRUE;
+  // Start off always using "OK" acknoledge.
+  g_ack_enable = TRUE;
 
-	// Use our own special output function for STDOUT
-	stdout = _H_USER;
+  // Use our own special output function for STDOUT
+  stdout = _H_USER;
 
-	// Initalize all of the ISR FIFOs
-    ISR_A_FIFO_out = 0;
-    ISR_A_FIFO_in = 0;
-    ISR_A_FIFO_length = 0;
-    ISR_D_FIFO_out = 0;
-    ISR_D_FIFO_in = 0;
-    ISR_D_FIFO_length = 0;
+  // Initalize all of the ISR FIFOs
+  ISR_A_FIFO_out = 0;
+  ISR_A_FIFO_in = 0;
+  ISR_A_FIFO_length = 0;
+  ISR_D_FIFO_out = 0;
+  ISR_D_FIFO_in = 0;
+  ISR_D_FIFO_length = 0;
 
-	// Make sure that our timer stuff starts out disabled
-	ISR_D_RepeatRate = 0;
-	ISR_A_RepeatRate = 0;
-	D_tick_counter = 0;
-	A_tick_counter = 0;
-	A_cur_channel = 0;
-	
-    // Now init our registers
-	// Initalize Timer4
-	// The prescaler will be at 16
-    T4CONbits.T4CKPS1 = 1;
-    T4CONbits.T4CKPS0 = 1;
-    // We want the TMR4 post scaler to be a 3
-    T4CONbits.T4OUTPS3 = 0;
-    T4CONbits.T4OUTPS2 = 0;
-    T4CONbits.T4OUTPS1 = 1;
-    T4CONbits.T4OUTPS0 = 0;
-	// Set our reload value
-	PR4 = kPR4_RELOAD;
+  // Make sure that our timer stuff starts out disabled
+  ISR_D_RepeatRate = 0;
+  ISR_A_RepeatRate = 0;
+  D_tick_counter = 0;
+  A_tick_counter = 0;
+  A_cur_channel = 0;
 
-	// Set up the Analog to Digital converter
-	// Clear out the FIFO data
-	for (i = 0; i < 16; i++)
-	{
-    	ISR_A_FIFO[i] = 0;
-	}	
+  // Now init our registers
+  // Initialize Timer4
+  // The prescaler will be at 16
+  T4CONbits.T4CKPS1 = 1;
+  T4CONbits.T4CKPS0 = 1;
+  // We want the TMR4 post scaler to be a 3
+  T4CONbits.T4OUTPS3 = 0;
+  T4CONbits.T4OUTPS2 = 0;
+  T4CONbits.T4OUTPS1 = 1;
+  T4CONbits.T4OUTPS0 = 0;
+  // Set our reload value
+  PR4 = kPR4_RELOAD;
 
-    // Initialize USB TX and RX buffer management
-    g_RX_buf_in = 0;
-    g_RX_buf_out = 0;
-	g_TX_buf_in = 0;
-	g_TX_buf_out = 0;
+  // Set up the Analog to Digital converter
+  // Clear out the FIFO data
+  for (i = 0; i < 16; i++)
+  {
+    ISR_A_FIFO[i] = 0;
+  }	
 
-    for (i=0; i < kTX_BUF_SIZE; i++)
-    {
-        g_TX_buf[i] = 0;
-    }
-    for (i=0; i < kRX_COMMAND_BUF_SIZE; i++)
-    {
-        g_RX_command_buf[i] = 0;
-    }
-    for (i=0; i < kRX_BUF_SIZE; i++)
-    {
-        g_RX_buf[i] = 0;
-    }
-    
-	// And the USART TX and RX buffer management
-	g_USART_RX_buf_in = 0;
-	g_USART_RX_buf_out = 0;
-	g_USART_TX_buf_in = 0;
-	g_USART_TX_buf_out = 0;
+  // Initialize USB TX and RX buffer management
+  g_RX_buf_in = 0;
+  g_RX_buf_out = 0;
+  g_TX_buf_in = 0;
+  g_TX_buf_out = 0;
 
-	// Clear out the RC servo output pointer values
-	g_RC_primed_ptr = 0;
-	g_RC_next_ptr = 0;
-	g_RC_timing_ptr = 0;
+  for (i=0; i < kTX_BUF_SIZE; i++)
+  {
+    g_TX_buf[i] = 0;
+  }
+  for (i=0; i < kRX_COMMAND_BUF_SIZE; i++)
+  {
+    g_RX_command_buf[i] = 0;
+  }
+  for (i=0; i < kRX_BUF_SIZE; i++)
+  {
+    g_RX_buf[i] = 0;
+  }
 
-	// Clear the RC data structure
-	for (i = 0; i < kRC_DATA_SIZE; i++)
-	{
-		g_RC_value[i] = 0;
-		g_RC_state[i] = kOFF;
-	}
+  // And the USART TX and RX buffer management
+  g_USART_RX_buf_in = 0;
+  g_USART_RX_buf_out = 0;
+  g_USART_TX_buf_in = 0;
+  g_USART_TX_buf_out = 0;
 
-	// Enable TMR0 for our RC timing operation
-	T0CONbits.PSA = 1;		// Do NOT use the prescaler
-	T0CONbits.T0CS = 0;		// Use internal clock
-	T0CONbits.T08BIT = 0;	// 16 bit timer
-	INTCONbits.TMR0IF = 0;	// Clear the interrupt flag
-	INTCONbits.TMR0IE = 0;	// And clear the interrupt enable
-	INTCON2bits.TMR0IP = 0;	// Low priority
+  // Clear out the RC servo output pointer values
+  g_RC_primed_ptr = 0;
+  g_RC_next_ptr = 0;
+  g_RC_timing_ptr = 0;
 
-    // Turn on band-gap
-    ANCON1bits.VBGEN = 1;
+  // Clear the RC data structure
+  for (i = 0; i < kRC_DATA_SIZE; i++)
+  {
+    g_RC_value[i] = 0;
+    g_RC_state[i] = kOFF;
+  }
 
-    // Set up ADCON1 options
-    // A/D Result right justified
-    // Normal A/D (no calibration)
-    // Acq time = 20 Tad (?)
-    // Tad = Fosc/64
-    ADCON1 = 0b10111110;
+  // Enable TMR0 for our RC timing operation
+  T0CONbits.PSA = 1;		// Do NOT use the prescaler
+  T0CONbits.T0CS = 0;		// Use internal clock
+  T0CONbits.T08BIT = 0;	// 16 bit timer
+  INTCONbits.TMR0IF = 0;	// Clear the interrupt flag
+  INTCONbits.TMR0IE = 0;	// And clear the interrupt enable
+  INTCON2bits.TMR0IP = 0;	// Low priority
 
-    // Enable interrupt priorities
-    RCONbits.IPEN = 1;
-	T4CONbits.TMR4ON = 0;
-    
-    PIE3bits.TMR4IE = 1;
-    IPR3bits.TMR4IP = 0;
-    
-	// Call the ebb init function to setup whatever it needs
-	EBB_Init();   
+  // Turn on band-gap
+  ANCON1bits.VBGEN = 1;
 
-#if defined(BOARD_EBB_V11) || defined(BOARD_EBB_V12) || defined(BOARD_EBB_V13_AND_ABOVE)
-	RCServo2_Init();
-#endif
+  // Set up ADCON1 options
+  // A/D Result right justified
+  // Normal A/D (no calibration)
+  // Acq time = 20 Tad (?)
+  // Tad = Fosc/64
+  ADCON1 = 0b10111110;
 
-    INTCONbits.GIEH = 1;	// Turn high priority interrupts on
-    INTCONbits.GIEL = 1;	// Turn low priority interrupts on
+  // Enable interrupt priorities
+  RCONbits.IPEN = 1;
+  T4CONbits.TMR4ON = 0;
 
-	// Turn on the Timer4
-	T4CONbits.TMR4ON = 1; 
-    
-    // If there's a name in FLASH for us, copy it over to the USB Device
-    // descriptor before we enumerate
-    populateDeviceStringWithName();
-    
-    spi_init();
+  PIE3bits.TMR4IE = 1;
+  IPR3bits.TMR4IP = 0;
+
+  // Call the ebb init function to setup whatever it needs
+  EBB_Init();
+
+  RCServo2_Init();
+
+  INTCONbits.GIEH = 1;	// Turn high priority interrupts on
+  INTCONbits.GIEL = 1;	// Turn low priority interrupts on
+
+  // Turn on the Timer4
+  T4CONbits.TMR4ON = 1; 
+
+  // If there's a name in FLASH for us, copy it over to the USB Device
+  // descriptor before we enumerate
+  populateDeviceStringWithName();
+
+  spi_init();
 }//end UserInit
 
 /******************************************************************************
@@ -1444,9 +1415,7 @@ void parse_packet(void)
 		case ('S' * 256) + '2':
 		{
 			// S2 for RC Servo method 2
-#if defined(BOARD_EBB_V11) || defined(BOARD_EBB_V12) || defined(BOARD_EBB_V13_AND_ABOVE)
 			RCServo2_S2_command();
-#endif
 			break;
 		}
 		case ('R' * 256) + 'M':
@@ -1717,16 +1686,8 @@ void parse_C_packet(void)
 	TRISA = PA;
 	TRISB = PB;
 	TRISC = PC;
-#if defined(BOARD_EBB_V10) || defined(BOARD_EBB_V11) || defined(BOARD_EBB_V12) || defined(BOARD_EBB_V13_AND_ABOVE)
 	TRISD = PD;
 	TRISE = PE;
-#endif
-#if defined(BOARD_EBB_V10)
-	TRISF = PF;
-	TRISG = PG;
-	TRISH = PH;
-	TRISJ = PJ;
-#endif	
 	
 	print_ack ();
 }
@@ -1831,7 +1792,6 @@ void parse_O_packet(void)
 	{
 		LATC = Value;
 	}
-#if defined(BOARD_EBB_V10) || defined(BOARD_EBB_V11) || defined(BOARD_EBB_V12) || defined(BOARD_EBB_V13_AND_ABOVE)
 	RetVal = extract_number (kUCHAR,  &Value, kOPTIONAL);
 	if (error_byte) return;
 	if (kEXTRACT_OK == RetVal)
@@ -1844,33 +1804,6 @@ void parse_O_packet(void)
 	{
 		LATE = Value;
 	}
-#endif
-#if defined(BOARD_EBB_V10)
-	RetVal = extract_number (kUCHAR,  &Value, kOPTIONAL);
-	if (error_byte) return;
-	if (kEXTRACT_OK == RetVal)
-	{
-		LATF = Value;
-	}
-	RetVal = extract_number (kUCHAR,  &Value, kOPTIONAL);
-	if (error_byte) return;
-	if (kEXTRACT_OK == RetVal)
-	{
-		LATG = Value;
-	}
-	RetVal = extract_number (kUCHAR,  &Value, kOPTIONAL);
-	if (error_byte) return;
-	if (kEXTRACT_OK == RetVal)
-	{
-		LATH = Value;
-	}
-	RetVal = extract_number (kUCHAR,  &Value, kOPTIONAL);
-	if (error_byte) return;
-	if (kEXTRACT_OK == RetVal)
-	{
-		LATJ = Value;
-	}
-#endif
 
 	print_ack ();
 }
@@ -1887,20 +1820,6 @@ void parse_O_packet(void)
 // The rest will be read in as zeros.
 void parse_I_packet(void)
 {
-#if defined(BOARD_EBB_V10)
-	printf (
-		(far rom char*)"I,%03i,%03i,%03i,%03i,%03i,%03i,%03i,%03i,%03i\r\n", 
-		PORTA,
-		PORTB,
-		PORTC,
-		PORTD,
-		PORTE,
-		PORTF,
-		PORTG,
-		PORTH,
-		PORTJ
-	);
-#elif defined(BOARD_EBB_V11) || defined(BOARD_EBB_V12) || defined(BOARD_EBB_V13_AND_ABOVE)
 	printf (
 		(far rom char*)"I,%03i,%03i,%03i,%03i,%03i\r\n", 
 		PORTA,
@@ -1909,14 +1828,6 @@ void parse_I_packet(void)
 		PORTD,
 		PORTE
 	);
-#elif defined(BOARD_UBW)
-	printf (
-		(far rom char*)"I,%03i,%03i,%03i\r\n", 
-		PORTA,
-		PORTB,
-		PORTC
-	);
-#endif
 }
 
 // All we do here is just print out our version number
@@ -2083,7 +1994,6 @@ void parse_PD_packet(void)
 			bitset (TRISC, pin);  	
 		}		
 	}
-#if defined(BOARD_EBB_V10) || defined(BOARD_EBB_V11) || defined(BOARD_EBB_V12) || defined(BOARD_EBB_V13_AND_ABOVE)
 	else if ('D' == port)
 	{
 		if (0 == direction)
@@ -2106,53 +2016,6 @@ void parse_PD_packet(void)
 			bitset (TRISE, pin);  	
 		}		
 	}
-#endif
-#if defined(BOARD_EBB_V10) 
-	else if ('F' == port)
-	{
-		if (0 == direction)
-		{
-			bitclr (TRISF, pin);  	
-		}
-		else
-		{
-			bitset (TRISF, pin);  	
-		}		
-	}
-	else if ('G' == port)
-	{
-		if (0 == direction)
-		{
-			bitclr (TRISG, pin);  	
-		}
-		else
-		{
-			bitset (TRISG, pin);  	
-		}		
-	}
-	else if ('H' == port)
-	{
-		if (0 == direction)
-		{
-			bitclr (TRISH, pin);  	
-		}
-		else
-		{
-			bitset (TRISH, pin);  	
-		}		
-	}
-	else if ('J' == port)
-	{
-		if (0 == direction)
-		{
-			bitclr (TRISJ, pin);  	
-		}
-		else
-		{
-			bitset (TRISJ, pin);  	
-		}		
-	}
-#endif
 	else
 	{
 		bitset (error_byte, kERROR_BYTE_PARAMETER_OUTSIDE_LIMIT);
@@ -2204,7 +2067,6 @@ void parse_PI_packet(void)
 	{
 		value = bittst (PORTC, pin);  	
 	}
-#if defined(BOARD_EBB_V10) || defined(BOARD_EBB_V11) || defined(BOARD_EBB_V12) || defined(BOARD_EBB_V13_AND_ABOVE)
 	else if ('D' == port)
 	{
 		value = bittst (PORTD, pin);  	
@@ -2213,25 +2075,6 @@ void parse_PI_packet(void)
 	{
 		value = bittst (PORTE, pin);  	
 	}
-#endif
-#if defined(BOARD_EBB_V10)
-	else if ('F' == port)
-	{
-		value = bittst (PORTF, pin);  	
-	}
-	else if ('G' == port)
-	{
-		value = bittst (PORTG, pin);  	
-	}
-	else if ('H' == port)
-	{
-		value = bittst (PORTH, pin);  	
-	}
-	else if ('J' == port)
-	{
-		value = bittst (PORTJ, pin);  	
-	}
-#endif
 	else
 	{
 		bitset (error_byte, kERROR_BYTE_PARAMETER_OUTSIDE_LIMIT);
@@ -2316,7 +2159,6 @@ void parse_PO_packet(void)
 			bitset (LATC, pin);  	
 		}		
 	}
-#if defined(BOARD_EBB_V10) || defined(BOARD_EBB_V11) || defined(BOARD_EBB_V12) || defined(BOARD_EBB_V13_AND_ABOVE)
 	else if ('D' == port)
 	{
 		if (0 == value)
@@ -2339,53 +2181,6 @@ void parse_PO_packet(void)
 			bitset (LATE, pin);  	
 		}		
 	}
-#endif
-#if defined(BOARD_EBB_V10)
-	else if ('F' == port)
-	{
-		if (0 == value)
-		{
-			bitclr (LATF, pin);  	
-		}
-		else
-		{
-			bitset (LATF, pin);  	
-		}		
-	}
-	else if ('G' == port)
-	{
-		if (0 == value)
-		{
-			bitclr (LATG, pin);  	
-		}
-		else
-		{
-			bitset (LATG, pin);  	
-		}		
-	}
-	else if ('H' == port)
-	{
-		if (0 == value)
-		{
-			bitclr (LATH, pin);  	
-		}
-		else
-		{
-			bitset (LATH, pin);  	
-		}		
-	}
-	else if ('J' == port)
-	{
-		if (0 == value)
-		{
-			bitclr (LATJ, pin);  	
-		}
-		else
-		{
-			bitset (LATJ, pin);  	
-		}		
-	}
-#endif
 	else
 	{
 		bitset (error_byte, kERROR_BYTE_PARAMETER_OUTSIDE_LIMIT);

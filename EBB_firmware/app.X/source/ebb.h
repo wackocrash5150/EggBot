@@ -11,7 +11,7 @@
  *
  * Software License Agreement
  *
- * Copyright (c) 2014, Brian Schmalz of Schmalz Haus LLC
+ * Copyright (c) 2019, Brian Schmalz of Schmalz Haus LLC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or
@@ -51,54 +51,42 @@
 #ifndef EBB_H
 #define EBB_H
 
-// 	These are used for Enable<X>IO to control the enable lines for the driver
-#define ENABLE_MOTOR        0
-#define DISABLE_MOTOR       1
-
 // How many stepper motors does this board support? (EBB is always 2)
 #define NUMBER_OF_STEPPERS  2
 
 typedef enum
 {
-	PEN_DOWN = 0,
-	PEN_UP
+  PEN_DOWN = 0,
+  PEN_UP
 } PenStateType;
 
 /* Enum that lists each type of command that can be put in the motion control FIFO */
 typedef enum
 {
-	COMMAND_NONE = 0,
-	COMMAND_MOTOR_MOVE,
-	COMMAND_DELAY,
-	COMMAND_SERVO_MOVE,
-    COMMAND_SE
+  COMMAND_NONE = 0,
+  COMMAND_MOTOR_MOVE,
+  COMMAND_DELAY,
+  COMMAND_SERVO_MOVE,
+  COMMAND_SE
 } CommandType;
 
 // This structure defines the elements of the move commands in the FIFO that
 // are sent from the command parser to the ISR move engine.
 typedef struct
 {
-    CommandType     Command;
-    INT32           StepAdd[NUMBER_OF_STEPPERS];
-    INT32           StepAddInc[NUMBER_OF_STEPPERS];
-    UINT32          StepsCounter[NUMBER_OF_STEPPERS];
-    UINT8           DirBits;
-    UINT32          DelayCounter;   // NOT Milliseconds! In 25KHz units
-    UINT16          ServoPosition;
-    UINT8           ServoRPn;
-    UINT8           ServoChannel;
-    UINT16          ServoRate;
-    UINT8           SEState;
-    UINT16          SEPower;
+  CommandType     Command;
+  INT32           StepAdd[NUMBER_OF_STEPPERS];
+  INT32           StepAddInc[NUMBER_OF_STEPPERS];
+  UINT32          StepsCounter[NUMBER_OF_STEPPERS];
+  UINT8           DirBits;
+  UINT32          DelayCounter;   // NOT Milliseconds! In 25KHz units
+  UINT16          ServoPosition;
+  UINT8           ServoRPn;
+  UINT8           ServoChannel;
+  UINT16          ServoRate;
+  UINT8           SEState;
+  UINT16          SEPower;
 } MoveCommandType;
-
-// Define global things that depend on the board type
-#define STEP1_BIT	(0x01)
-#define DIR1_BIT	(0x02)
-#define STEP2_BIT	(0x04)
-#define DIR2_BIT	(0x08)
-
-#define NUMBER_OF_STEPPERS  2
 
 // Reload value for TIMER1
 // We need a 25KHz ISR to fire, so we take Fosc (48Mhz), divide by 4
@@ -122,7 +110,6 @@ extern unsigned int comd_counter;
 extern unsigned char QC_ms_timer;
 extern BOOL gLimitChecks;
 
-// Default to on, comes out on pin RB4 for EBB v1.3 and above
 extern BOOL gUseSolenoid;
 void parse_SM_packet(void);
 void parse_AM_packet(void);
@@ -149,4 +136,4 @@ void parse_CS_packet(void);
 void parse_LM_packet(void);
 void EBB_Init(void);
 void process_SP(PenStateType NewState, UINT16 CommandDuration);
-#endif
+#endif  // EBB_H
