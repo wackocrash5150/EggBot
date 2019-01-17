@@ -10,5 +10,6 @@
 
 void spi_init(void);
 void spi_send(unsigned char command, unsigned long int sendData); 
+void parse_TS_packet(void);
 
 #endif	/* SPI_H */

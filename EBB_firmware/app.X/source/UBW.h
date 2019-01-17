@@ -89,6 +89,7 @@ typedef enum {
   ,kUCASE_ASCII_CHAR  // ASCII character, must be uppercase
   ,kLONG          // Four bytes, signed
   ,kULONG         // Four bytes, unsigned
+  ,kHEX_BYTE      // two ASCII hex chars (upper/lowercase), converted to one unsigned char
 } ExtractType;
 
 typedef enum {
@@ -128,9 +129,6 @@ extern volatile unsigned int ISR_A_FIFO[16];            // Stores the most recen
 
 extern unsigned char error_byte;
 extern BOOL	g_ack_enable;
-
-extern volatile unsigned int g_RC_value[kRC_DATA_SIZE]; // Stores reload values for TMR0
-extern volatile tRC_state g_RC_state[kRC_DATA_SIZE];
 
 extern volatile unsigned long int gRCServoPoweroffCounterMS;
 extern volatile unsigned long int gRCServoPoweroffCounterReloadMS;

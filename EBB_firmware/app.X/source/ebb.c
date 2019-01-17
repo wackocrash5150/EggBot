@@ -249,7 +249,7 @@
 
 // This is the value that gets multiplied by Steps/Duration to compute
 // the StepAdd values.
-#define OVERFLOW_MUL	(0x8000 / HIGH_ISR_TICKS_PER_MS)
+#define OVERFLOW_MUL    (0x8000 / HIGH_ISR_TICKS_PER_MS)
 
 #define MAX_RC_DURATION 11890
 
@@ -514,28 +514,28 @@ void EBB_Init(void)
   FIFOEmpty = TRUE;
 
   // Set up TMR1 for our 25KHz High ISR for stepping
-  T1CONbits.RD16 = 1; 	// Set 16 bit mode
-  T1CONbits.TMR1CS1 = 0; 	// System clocked from Fosc/4
+  T1CONbits.RD16 = 1;   // Set 16 bit mode
+  T1CONbits.TMR1CS1 = 0;    // System clocked from Fosc/4
   T1CONbits.TMR1CS0 = 0;
-  T1CONbits.T1CKPS1 = 0; 	// Use 1:1 Prescale value
+  T1CONbits.T1CKPS1 = 0;    // Use 1:1 Prescale value
   T1CONbits.T1CKPS0 = 0;
-  T1CONbits.T1OSCEN = 0; 	// Don't use external osc
+  T1CONbits.T1OSCEN = 0;    // Don't use external osc
   T1CONbits.T1SYNC = 0;
-  TMR1H = TIMER1_H_RELOAD;	//
-  TMR1L = TIMER1_L_RELOAD;	// Reload for 25Khz ISR fire
+  TMR1H = TIMER1_H_RELOAD;  //
+  TMR1L = TIMER1_L_RELOAD;  // Reload for 25Khz ISR fire
 
   T1CONbits.TMR1ON = 1; // Turn the timer on
 
-  IPR1bits.TMR1IP = 1;	// Use high priority interrupt
-  PIR1bits.TMR1IF = 0;	// Clear the interrupt
-  PIE1bits.TMR1IE = 1;	// Turn on the interrupt
+  IPR1bits.TMR1IP = 1;  // Use high priority interrupt
+  PIR1bits.TMR1IF = 0;  // Clear the interrupt
+  PIE1bits.TMR1IE = 1;  // Turn on the interrupt
 
 //  PORTA = 0;
 //  RefRA0_IO_TRIS = INPUT_PIN;
 //  PORTB = 0;
-  INTCON2bits.RBPU = 0;	// Turn on weak-pull ups for port B
-//	PORTC = 0;		// Start out low
-//  TRISC = 0x02;	// Make portC output except for PortC bit 1, USB bus sense
+  INTCON2bits.RBPU = 0; // Turn on weak-pull ups for port B
+//  PORTC = 0;      // Start out low
+//  TRISC = 0x02;   // Make portC output except for PortC bit 1, USB bus sense
 //  PORTD = 0;
 //  TRISD = 0;
 //  PORTE = 0;
@@ -599,11 +599,11 @@ void EBB_Init(void)
   // PAUSE button (just like PRG)
   // Except for v1.1 hardware, use RB2
 /// TRISBbits.TRISB0 = 1;
-/// INTCON2bits.RBPU = 0;	// Turn on all of PortB pull-ups
+/// INTCON2bits.RBPU = 0;   // Turn on all of PortB pull-ups
   UseAltPause = TRUE;
 
-///	TRISBbits.TRISB3 = 0;		// Make RB3 an output (for engraver)
-///	PORTBbits.RB3 = 0;          // And make sure it starts out off
+/// TRISBbits.TRISB3 = 0;       // Make RB3 an output (for engraver)
+/// PORTBbits.RB3 = 0;          // And make sure it starts out off
 
   // Clear out global stepper positions
   parse_CS_packet();
@@ -615,12 +615,12 @@ void EBB_Init(void)
 // SC,1,2<CR> will use servo on RB1 for pen up/down, but with ECCP2 (PWM) in hardware (default)
 // SC,2,0<CR> will make PIC control drivers (default)
 // SC,2,1<CR> will make PIC control external drivers using these pins
-//		ENABLE1 = RD1
-//		ENABLE2 = RA1
-//		STEP1 = RC6
-//		DIR1 = RC2
-//		STEP2 = RA5
-//		DIR2 = RA2
+//      ENABLE1 = RD1
+//      ENABLE2 = RA1
+//      STEP1 = RC6
+//      DIR1 = RC2
+//      STEP2 = RA5
+//      DIR2 = RA2
 // SC,2,2<CR> will disconnect PIC from drivers and allow external step/dir source
 // SC,4,<servo2_min><CR> will set <servo2_min> as the minimum value for the servo (1 to 65535)
 // SC,5,<servo2_max><CR> will set <servo2_max> as the maximum value for the servo (1 to 65535)
@@ -724,65 +724,65 @@ void parse_SC_packet (void)
 //      Step2IO_TRIS = INPUT_PIN;
 //      Dir2IO_TRIS = INPUT_PIN;
       // Alternate I/O pins become inputs
-//			Dir1AltIO_TRIS = INPUT_PIN;
-//			Dir2AltIO_TRIS = INPUT_PIN;
-//			Step1AltIO_TRIS = INPUT_PIN;
-//			Step2AltIO_TRIS = INPUT_PIN;
-//			Enable1AltIO_TRIS = INPUT_PIN;
-//			Enable2AltIO_TRIS = INPUT_PIN;
+//          Dir1AltIO_TRIS = INPUT_PIN;
+//          Dir2AltIO_TRIS = INPUT_PIN;
+//          Step1AltIO_TRIS = INPUT_PIN;
+//          Step2AltIO_TRIS = INPUT_PIN;
+//          Enable1AltIO_TRIS = INPUT_PIN;
+//          Enable2AltIO_TRIS = INPUT_PIN;
      }
-	}
-	// Set <min_servo> for Servo2 method
-	else if (Para1 == 4)
-	{
-		g_servo2_min = Para2;
-	}
-	// Set <max_servo> for Servo2
-	else if (Para1 == 5)
-	{
-		g_servo2_max = Para2;
-	}
-	// Set <gRC2Slots>
-	else if (Para1 == 8)
-	{
-		if (Para2 > MAX_RC2_SERVOS)
-		{
-			Para2 = MAX_RC2_SERVOS;
-		}
-		gRC2Slots = Para2;
-	}
-	else if (Para1 == 9)
-	{
-		if (Para2 > 6)
-		{
-			Para2 = 6;
-		}
-		gRC2SlotMS = Para2;
-	}
-	else if (Para1 == 10)
-	{
-		g_servo2_rate_up = Para2;
-		g_servo2_rate_down = Para2;
-	}
-	else if (Para1 == 11)
-	{
-		g_servo2_rate_up = Para2;
-	}
-	else if (Para1 == 12)
-	{
-		g_servo2_rate_down = Para2;
-	}
+    }
+    // Set <min_servo> for Servo2 method
+    else if (Para1 == 4)
+    {
+        g_servo2_min = Para2;
+    }
+    // Set <max_servo> for Servo2
+    else if (Para1 == 5)
+    {
+        g_servo2_max = Para2;
+    }
+    // Set <gRC2Slots>
+    else if (Para1 == 8)
+    {
+        if (Para2 > MAX_RC2_SERVOS)
+        {
+            Para2 = MAX_RC2_SERVOS;
+        }
+        gRC2Slots = Para2;
+    }
+    else if (Para1 == 9)
+    {
+        if (Para2 > 6)
+        {
+            Para2 = 6;
+        }
+        gRC2SlotMS = Para2;
+    }
+    else if (Para1 == 10)
+    {
+        g_servo2_rate_up = Para2;
+        g_servo2_rate_down = Para2;
+    }
+    else if (Para1 == 11)
+    {
+        g_servo2_rate_up = Para2;
+    }
+    else if (Para1 == 12)
+    {
+        g_servo2_rate_down = Para2;
+    }
     else if (Para1 == 13)
-	{
-		if (Para2)
-		{
-			UseAltPause = TRUE;
-		}
-		else
-		{
-			UseAltPause = FALSE;
-		}			
-	}
+    {
+        if (Para2)
+        {
+            UseAltPause = TRUE;
+        }
+        else
+        {
+            UseAltPause = FALSE;
+        }           
+    }
     print_ack();
 }
 
@@ -1027,17 +1027,17 @@ void parse_AM_packet (void)
 // Usage: LM,<StepAdd1>,<StepsCounter1>,<StepAddInc1>,<StepAdd2>,<StepsCounter2>,<StepAddInc2><CR>
 void parse_LM_packet (void)
 {
-	UINT32 StepAdd1, StepAddInc1, StepAdd2, StepAddInc2 = 0;
+    UINT32 StepAdd1, StepAddInc1, StepAdd2, StepAddInc2 = 0;
     INT32 StepsCounter1, StepsCounter2 = 0;
     MoveCommandType move;
     
     // Extract each of the values.
-	extract_number (kULONG, &StepAdd1, kREQUIRED);
-	extract_number (kLONG,  &StepsCounter1, kREQUIRED);
-	extract_number (kLONG, &StepAddInc1, kREQUIRED);
-	extract_number (kULONG, &StepAdd2, kREQUIRED);
-	extract_number (kLONG,  &StepsCounter2, kREQUIRED);
-	extract_number (kLONG, &StepAddInc2, kREQUIRED);
+    extract_number (kULONG, &StepAdd1, kREQUIRED);
+    extract_number (kLONG,  &StepsCounter1, kREQUIRED);
+    extract_number (kLONG, &StepAddInc1, kREQUIRED);
+    extract_number (kULONG, &StepAdd2, kREQUIRED);
+    extract_number (kLONG,  &StepsCounter2, kREQUIRED);
+    extract_number (kLONG, &StepAddInc2, kREQUIRED);
 
     // Bail if we got a conversion error
     if (error_byte)
@@ -1093,9 +1093,9 @@ void parse_LM_packet (void)
     move.StepAddInc[1] = StepAddInc2;
     move.Command = COMMAND_MOTOR_MOVE;
 
-	// Spin here until there's space in the fifo
-	while(!FIFOEmpty)
-	;
+    // Spin here until there's space in the fifo
+    while(!FIFOEmpty)
+    ;
 
     CommandFIFO[0] = move;
 
@@ -1108,12 +1108,12 @@ void parse_LM_packet (void)
             CommandFIFO[0].StepsCounter[1]
         );
      */
-		
-	FIFOEmpty = FALSE;
+        
+    FIFOEmpty = FALSE;
     
     if (g_ack_enable)
     {
-    	print_ack();
+        print_ack();
     }
 }
 
@@ -1128,14 +1128,14 @@ void parse_LM_packet (void)
 // pauses before raising or lowering the pen, for example.
 void parse_SM_packet (void)
 {
-	UINT32 Duration = 0;
-	INT32 A1Steps = 0, A2Steps = 0;
+    UINT32 Duration = 0;
+    INT32 A1Steps = 0, A2Steps = 0;
     INT32 Steps = 0;
 
-	// Extract each of the values.
-	extract_number (kULONG, &Duration, kREQUIRED);
-	extract_number (kLONG, &A1Steps, kREQUIRED);
-	extract_number (kLONG, &A2Steps, kOPTIONAL);
+    // Extract each of the values.
+    extract_number (kULONG, &Duration, kREQUIRED);
+    extract_number (kLONG, &A1Steps, kREQUIRED);
+    extract_number (kLONG, &A2Steps, kOPTIONAL);
 
     if (gLimitChecks)
     {
@@ -1199,11 +1199,11 @@ void parse_SM_packet (void)
 
     // If we get here, we know that step rate for both A1 and A2 is
     // between 25KHz and 1.31Hz which are the limits of what EBB can do.
-  	process_SM(Duration, A1Steps, A2Steps);
+    process_SM(Duration, A1Steps, A2Steps);
 
     if (g_ack_enable)
     {
-    	print_ack();
+        print_ack();
     }
 }
 
@@ -1216,19 +1216,19 @@ void parse_SM_packet (void)
 // Axis2 = <axisA_steps> - <axisB_steps>.
 void parse_XM_packet (void)
 {
-	UINT32 Duration = 0;
-	INT32 A1Steps = 0, A2Steps = 0;
+    UINT32 Duration = 0;
+    INT32 A1Steps = 0, A2Steps = 0;
     INT32 ASteps = 0, BSteps = 0;
     INT32 Steps = 0;
 
-	// Extract each of the values.
-	extract_number (kULONG, &Duration, kREQUIRED);
-	extract_number (kLONG, &ASteps, kREQUIRED);
-	extract_number (kLONG, &BSteps, kREQUIRED);
+    // Extract each of the values.
+    extract_number (kULONG, &Duration, kREQUIRED);
+    extract_number (kLONG, &ASteps, kREQUIRED);
+    extract_number (kLONG, &BSteps, kREQUIRED);
 
     // Check for invalid duration
     if (Duration == 0) {
-    	bitset (error_byte, kERROR_BYTE_PARAMETER_OUTSIDE_LIMIT);
+        bitset (error_byte, kERROR_BYTE_PARAMETER_OUTSIDE_LIMIT);
     }
 
     // Do the math to convert to Axis1 and Axis2
@@ -1283,16 +1283,16 @@ void parse_XM_packet (void)
     }
 
     // Bail if we got a conversion error
-	if (error_byte)
-	{
-		return;
-	}
+    if (error_byte)
+    {
+        return;
+    }
 
     // If we get here, we know that step rate for both A1 and A2 is
     // between 25KHz and 1.31Hz which are the limits of what EBB can do.
-  	process_SM(Duration, A1Steps, A2Steps);
+    process_SM(Duration, A1Steps, A2Steps);
 
-	print_ack();
+    print_ack();
 }
 
 // Main stepper move function. This is the reason EBB exists.
@@ -1307,9 +1307,9 @@ void parse_XM_packet (void)
 // In the future, making the FIFO more elements deep may be cool.
 // 
 static void process_SM(
-	UINT32 Duration,
-	INT32 A1Stp,
-	INT32 A2Stp
+    UINT32 Duration,
+    INT32 A1Stp,
+    INT32 A2Stp
 )
 {
     UINT32 temp = 0;
@@ -1318,22 +1318,22 @@ static void process_SM(
     UINT32 remainder = 0;
     MoveCommandType move;
 
-	// Check for delay
-	if (A1Stp == 0 && A2Stp == 0)
-	{
-		move.Command = COMMAND_DELAY;
+    // Check for delay
+    if (A1Stp == 0 && A2Stp == 0)
+    {
+        move.Command = COMMAND_DELAY;
         // This is OK because we only need to multiply the 3 byte Duration by
         // 25, so it fits in 4 bytes OK.
-  		move.DelayCounter = HIGH_ISR_TICKS_PER_MS * Duration;
-	}
-	else
-	{
-		move.DelayCounter = 0; // No delay for motor moves
-		move.DirBits = 0;
-		
-		// Always enable both motors when we want to move them
-//		Enable1IO = ENABLE_MOTOR;
-//		Enable2IO = ENABLE_MOTOR;
+        move.DelayCounter = HIGH_ISR_TICKS_PER_MS * Duration;
+    }
+    else
+    {
+        move.DelayCounter = 0; // No delay for motor moves
+        move.DirBits = 0;
+        
+        // Always enable both motors when we want to move them
+//      Enable1IO = ENABLE_MOTOR;
+//      Enable2IO = ENABLE_MOTOR;
         RCServoPowerIO = RCSERVO_POWER_ON;
         gRCServoPoweroffCounterMS = gRCServoPoweroffCounterReloadMS;
 
@@ -1452,16 +1452,16 @@ static void process_SM(
         //        move.StepAdd[1],
         //        move.StepsCounter[1]
         //    );
-	}
-		
-	// Spin here until there's space in the fifo
-	while(!FIFOEmpty)
-	;
+    }
+        
+    // Spin here until there's space in the fifo
+    while(!FIFOEmpty)
+    ;
 
     // Now, quick copy over the computed command data to the command fifo
     CommandFIFO[0] = move;
     
-	FIFOEmpty = FALSE;
+    FIFOEmpty = FALSE;
 }
 
 // E-Stop
@@ -1514,7 +1514,7 @@ void parse_ES_packet(void)
     // If the current command is a move command, then stop the move.
     if (CurrentCommand.Command == COMMAND_MOTOR_MOVE)
     {
-    	CurrentCommand.Command = COMMAND_NONE;
+        CurrentCommand.Command = COMMAND_NONE;
         remaining_steps1 = CurrentCommand.StepsCounter[0];
         remaining_steps2 = CurrentCommand.StepsCounter[1];
         CurrentCommand.StepsCounter[0] = 0;
@@ -1530,7 +1530,7 @@ void parse_ES_packet(void)
             remaining_steps1,
             remaining_steps2
         );
-	print_ack();
+    print_ack();
 }
 
 // Query Pen
@@ -1538,9 +1538,9 @@ void parse_ES_packet(void)
 // Returns: 0 for down, 1 for up, then OK<CR>
 void parse_QP_packet(void)
 {
-	printf((far rom char *)"%d\n\r", PenState);
+    printf((far rom char *)"%d\n\r", PenState);
 
-	print_ack();
+    print_ack();
 }
 
 // Toggle Pen
@@ -1551,27 +1551,27 @@ void parse_QP_packet(void)
 // Duration is in units of 1ms
 void parse_TP_packet(void)
 {
-	UINT16 CommandDuration = 0;
+    UINT16 CommandDuration = 0;
 
-	// Extract each of the values.
-	extract_number (kUINT, &CommandDuration, kOPTIONAL);
+    // Extract each of the values.
+    extract_number (kUINT, &CommandDuration, kOPTIONAL);
 
-	// Bail if we got a conversion error
-	if (error_byte)
-	{
-		return;
-	}
+    // Bail if we got a conversion error
+    if (error_byte)
+    {
+        return;
+    }
 
-	if (PenState == PEN_UP)
-	{
-		process_SP(PEN_DOWN, CommandDuration);
-	}
-	else
-	{
-		process_SP(PEN_UP, CommandDuration);
-	}
+    if (PenState == PEN_UP)
+    {
+        process_SP(PEN_DOWN, CommandDuration);
+    }
+    else
+    {
+        process_SP(PEN_UP, CommandDuration);
+    }
 
-	print_ack();
+    print_ack();
 }
 
 // Set Pen
@@ -1597,27 +1597,27 @@ void parse_TP_packet(void)
 //
 void parse_SP_packet(void)
 {
-	UINT8 State = 0;
-	UINT16 CommandDuration = 0;
-	UINT8 Pin = DEFAULT_EBB_SERVO_PORTD_PIN;
+    UINT8 State = 0;
+    UINT16 CommandDuration = 0;
+    UINT8 Pin = DEFAULT_EBB_SERVO_PORTD_PIN;
     ExtractReturnType Ret;
 
-	// Extract each of the values.
-	extract_number (kUCHAR, &State, kREQUIRED);
-	extract_number (kUINT, &CommandDuration, kOPTIONAL);
-	Ret = extract_number (kUCHAR, &Pin, kOPTIONAL);
+    // Extract each of the values.
+    extract_number (kUCHAR, &State, kREQUIRED);
+    extract_number (kUINT, &CommandDuration, kOPTIONAL);
+    Ret = extract_number (kUCHAR, &Pin, kOPTIONAL);
 
-	// Bail if we got a conversion error
-	if (error_byte)
-	{
-		return;
-	}
+    // Bail if we got a conversion error
+    if (error_byte)
+    {
+        return;
+    }
 
     // Error check
-	if (Pin > 7)
-	{
-		Pin = DEFAULT_EBB_SERVO_PORTD_PIN;
-	}
+    if (Pin > 7)
+    {
+        Pin = DEFAULT_EBB_SERVO_PORTD_PIN;
+    }
 
     if (State > 1)
     {
@@ -1636,9 +1636,9 @@ void parse_SP_packet(void)
     }
 
     // Execute the servo state change
-	process_SP(State, CommandDuration);
+    process_SP(State, CommandDuration);
     
-	print_ack();
+    print_ack();
 }
 
 // Internal use function -
@@ -1651,20 +1651,20 @@ void parse_SP_packet(void)
 // to schedule an RC Servo change with the RCServo2_Move() function.
 //
 void process_SP(PenStateType NewState, UINT16 CommandDuration)
-{	
+{   
     UINT16 Position;
     UINT16 Rate;
 
-	if (NewState == PEN_UP)
-	{
+    if (NewState == PEN_UP)
+    {
         Position = g_servo2_min;
         Rate = g_servo2_rate_up;
-	}
-	else
-	{
+    }
+    else
+    {
         Position = g_servo2_max;
         Rate = g_servo2_rate_down;
-	}
+    }
 
     RCServoPowerIO = RCSERVO_POWER_ON;
     gRCServoPoweroffCounterMS = gRCServoPoweroffCounterReloadMS;
@@ -1677,19 +1677,19 @@ void process_SP(PenStateType NewState, UINT16 CommandDuration)
 // Usage: EM,<EnableAxis1>,<EnableAxis2><CR>
 // Everything after EnableAxis1 is optional
 // Each parameter can have a value of
-//		0 to disable that motor driver
+//      0 to disable that motor driver
 // FOR OLD DRIVER CHIP (A3967) - can do separate enables for each axis
-//		1 to enable the driver in 1/8th step mode
-//		2 to enable the driver in 1/4 step mode
-//		3 to enable the driver in 1/2 step mode
-//		4 to enable the driver in full step mode
+//      1 to enable the driver in 1/8th step mode
+//      2 to enable the driver in 1/4 step mode
+//      3 to enable the driver in 1/2 step mode
+//      4 to enable the driver in full step mode
 // FOR NEW DRIVER CHIP (A4988/A4983)
 // (only first parameter applies, and it applies to both drivers)
-//		1 to enable the driver in 1/16th step mode
-//		2 to enable the driver in 1/8 step mode
-//		3 to enable the driver in 1/4 step mode
-//		4 to enable the driver in 1/2 step mode
-//		5 to enable the driver in full step mode
+//      1 to enable the driver in 1/16th step mode
+//      2 to enable the driver in 1/8 step mode
+//      3 to enable the driver in 1/4 step mode
+//      4 to enable the driver in 1/2 step mode
+//      5 to enable the driver in full step mode
 // If you disable a motor, it goes 'limp' (we clear the ENABLE pin on that motor's
 // driver chip)
 // Note that when using 0 or 1 for a parameter, you can use both axis even
@@ -1699,121 +1699,121 @@ void process_SP(PenStateType NewState, UINT16 CommandDuration)
 // MSx lines.
 void parse_EM_packet(void)
 {
-	unsigned char EA1, EA2;
-	ExtractReturnType RetVal;
+    unsigned char EA1, EA2;
+    ExtractReturnType RetVal;
 
-	// Extract each of the values.
-	RetVal = extract_number (kUCHAR, &EA1, kREQUIRED);
-	if (kEXTRACT_OK == RetVal)
-	{
-		// Bail if we got a conversion error
-		if (error_byte)
-		{
-			return;
-		}
-		if (
+    // Extract each of the values.
+    RetVal = extract_number (kUCHAR, &EA1, kREQUIRED);
+    if (kEXTRACT_OK == RetVal)
+    {
+        // Bail if we got a conversion error
+        if (error_byte)
+        {
+            return;
+        }
+        if (
             (DriverConfiguration == PIC_CONTROLS_DRIVERS)
             ||
             (DriverConfiguration == EXTERNAL_CONTROLS_DRIVERS)
         )
-		{
-			if (EA1 > 0)
-			{
-				if (DriverConfiguration == PIC_CONTROLS_DRIVERS)
+        {
+            if (EA1 > 0)
+            {
+                if (DriverConfiguration == PIC_CONTROLS_DRIVERS)
                 {
 //                    Enable1IO = ENABLE_MOTOR;
                     RCServoPowerIO = RCSERVO_POWER_ON;
                     gRCServoPoweroffCounterMS = gRCServoPoweroffCounterReloadMS;
                 }
-				if (EA1 == 1)
-				{
-//					MS1_IO = 1;
-//					MS2_IO = 1;
-//					MS3_IO = 1;
-				}
-				if (EA1 == 2)
-				{
-//					MS1_IO = 1;
-//					MS2_IO = 1;
-//					MS3_IO = 0;
-				}
-				if (EA1 == 3)
-				{
-//					MS1_IO = 0;
-//					MS2_IO = 1;
-//					MS3_IO = 0;
-				}
-				if (EA1 == 4)
-				{
-//					MS1_IO = 1;
-//					MS2_IO = 0;
-//					MS3_IO = 0;
-				}				
-				if (EA1 == 5)
-				{
-//					MS1_IO = 0;
-//					MS2_IO = 0;
-//					MS3_IO = 0;
-				}				
-			}
-			else
-			{
-				if (DriverConfiguration == PIC_CONTROLS_DRIVERS)
+                if (EA1 == 1)
                 {
-//    				Enable1IO = DISABLE_MOTOR;
+//                  MS1_IO = 1;
+//                  MS2_IO = 1;
+//                  MS3_IO = 1;
                 }
-			}
-		}
+                if (EA1 == 2)
+                {
+//                  MS1_IO = 1;
+//                  MS2_IO = 1;
+//                  MS3_IO = 0;
+                }
+                if (EA1 == 3)
+                {
+//                  MS1_IO = 0;
+//                  MS2_IO = 1;
+//                  MS3_IO = 0;
+                }
+                if (EA1 == 4)
+                {
+//                  MS1_IO = 1;
+//                  MS2_IO = 0;
+//                  MS3_IO = 0;
+                }               
+                if (EA1 == 5)
+                {
+//                  MS1_IO = 0;
+//                  MS2_IO = 0;
+//                  MS3_IO = 0;
+                }               
+            }
+            else
+            {
+                if (DriverConfiguration == PIC_CONTROLS_DRIVERS)
+                {
+//                  Enable1IO = DISABLE_MOTOR;
+                }
+            }
+        }
         else if (DriverConfiguration == PIC_CONTROLS_EXTERNAL)
-		{
-			if (EA1 > 0)
-			{
-//				Enable1AltIO = ENABLE_MOTOR;
+        {
+            if (EA1 > 0)
+            {
+//              Enable1AltIO = ENABLE_MOTOR;
                 RCServoPowerIO = RCSERVO_POWER_ON;
                 gRCServoPoweroffCounterMS = gRCServoPoweroffCounterReloadMS;
-			}
-			else
-			{
-//				Enable1AltIO = DISABLE_MOTOR;
-			}
-		}
-	}
+            }
+            else
+            {
+//              Enable1AltIO = DISABLE_MOTOR;
+            }
+        }
+    }
 
-	RetVal = extract_number (kUCHAR, &EA2, kOPTIONAL);
-	if (kEXTRACT_OK == RetVal)
-	{
-		// Bail if we got a conversion error
-		if (error_byte)
-		{
-			return;
-		}
-		if (DriverConfiguration == PIC_CONTROLS_DRIVERS)
-		{
-			if (EA2 > 0)
-			{
-//				Enable2IO = ENABLE_MOTOR;
+    RetVal = extract_number (kUCHAR, &EA2, kOPTIONAL);
+    if (kEXTRACT_OK == RetVal)
+    {
+        // Bail if we got a conversion error
+        if (error_byte)
+        {
+            return;
+        }
+        if (DriverConfiguration == PIC_CONTROLS_DRIVERS)
+        {
+            if (EA2 > 0)
+            {
+//              Enable2IO = ENABLE_MOTOR;
                 RCServoPowerIO = RCSERVO_POWER_ON;
                 gRCServoPoweroffCounterMS = gRCServoPoweroffCounterReloadMS;
-			}
-			else
-			{
-//				Enable2IO = DISABLE_MOTOR;
-			}
-		}
+            }
+            else
+            {
+//              Enable2IO = DISABLE_MOTOR;
+            }
+        }
         else if (DriverConfiguration == PIC_CONTROLS_EXTERNAL)
-		{
-			if (EA2 > 0)
-			{
-//				Enable2AltIO = ENABLE_MOTOR;
+        {
+            if (EA2 > 0)
+            {
+//              Enable2AltIO = ENABLE_MOTOR;
                 RCServoPowerIO = RCSERVO_POWER_ON;
                 gRCServoPoweroffCounterMS = gRCServoPoweroffCounterReloadMS;
-			}
-			else
-			{
-//				Enable2AltIO = DISABLE_MOTOR;
-			}
-		}
-	}
+            }
+            else
+            {
+//              Enable2AltIO = DISABLE_MOTOR;
+            }
+        }
+    }
 
     print_ack();
 }
@@ -1822,22 +1822,22 @@ void parse_EM_packet(void)
 // Usage: NI<CR>
 void parse_NI_packet(void)
 {
-	if (NodeCount < 0xFFFFFFFEL)
-	{
-		NodeCount++;
-	}
-	print_ack();
+    if (NodeCount < 0xFFFFFFFEL)
+    {
+        NodeCount++;
+    }
+    print_ack();
 }
 
 // Node counter Deccriment
 // Usage: ND<CR>
 void parse_ND_packet(void)
 {
-	if (NodeCount)
-	{
-		NodeCount--;
-	}
-	print_ack();
+    if (NodeCount)
+    {
+        NodeCount--;
+    }
+    print_ack();
 }
 
 // Set Node counter
@@ -1845,15 +1845,15 @@ void parse_ND_packet(void)
 // <value> is a 4 byte unsigned value
 void parse_SN_packet(void)
 {
-	unsigned long Temp;
-	ExtractReturnType RetVal;
-	
-	RetVal = extract_number (kULONG, &Temp, kREQUIRED);
-	if (kEXTRACT_OK == RetVal)
-	{
-		NodeCount = Temp;
-	}
-	print_ack();
+    unsigned long Temp;
+    ExtractReturnType RetVal;
+    
+    RetVal = extract_number (kULONG, &Temp, kREQUIRED);
+    if (kEXTRACT_OK == RetVal)
+    {
+        NodeCount = Temp;
+    }
+    print_ack();
 }
 
 // Query Node counter
@@ -1862,25 +1862,25 @@ void parse_SN_packet(void)
 // OK<CR>
 void parse_QN_packet(void)
 {
-	printf ((far rom char*)"%010lu\r\n", NodeCount);
+    printf ((far rom char*)"%010lu\r\n", NodeCount);
 
-	print_ack();
+    print_ack();
 }
 
 // Set Layer
 // Usage: SL,<NewLayer><CR>
 void parse_SL_packet(void)
 {
-	// Extract each of the values.
-	extract_number (kUCHAR, &Layer, kREQUIRED);
+    // Extract each of the values.
+    extract_number (kUCHAR, &Layer, kREQUIRED);
 
-	// Bail if we got a conversion error
-	if (error_byte)
-	{
-		return;
-	}
+    // Bail if we got a conversion error
+    if (error_byte)
+    {
+        return;
+    }
 
-	print_ack();
+    print_ack();
 }
 
 // Query Layer
@@ -1889,9 +1889,9 @@ void parse_SL_packet(void)
 // OK<CR>
 void parse_QL_packet(void)
 {
-	printf ((far rom char*)"%03i\r\n", Layer);
+    printf ((far rom char*)"%03i\r\n", Layer);
 
-	print_ack();
+    print_ack();
 }
 
 // Query Button
@@ -1900,10 +1900,10 @@ void parse_QL_packet(void)
 // OK<CR>
 void parse_QB_packet(void)
 {
-	printf ((far rom char*)"%1i\r\n", ButtonPushed);
-	ButtonPushed = FALSE;
+    printf ((far rom char*)"%1i\r\n", ButtonPushed);
+    ButtonPushed = FALSE;
 
-	print_ack();
+    print_ack();
 }
 
 // Query Current
@@ -1924,11 +1924,11 @@ void parse_QC_packet(void)
     // the cycle of ADC readings to finish before we spit out our value.
     while (PIE1bits.ADIE);
 
-	// Print out our results
-	printf ((far rom char*)"%04i,%04i\r\n", ISR_A_FIFO[0], ISR_A_FIFO[11]);
+    // Print out our results
+    printf ((far rom char*)"%04i,%04i\r\n", ISR_A_FIFO[0], ISR_A_FIFO[11]);
 
-	print_ack();
-}	
+    print_ack();
+}   
 
 // Set Engraver
 // Usage: SE,<state>,<power>,<use_motion_queue><CR>
@@ -1947,23 +1947,23 @@ void parse_QC_packet(void)
 
 void parse_SE_packet(void)
 {
-	UINT8 State = 0;
-	UINT16 Power = 0;
+    UINT8 State = 0;
+    UINT16 Power = 0;
     UINT8 SEUseMotionQueue = FALSE;
     ExtractReturnType PowerExtract;
-	
-	// Extract each of the values.
-	extract_number (kUCHAR, &State, kREQUIRED);
-	PowerExtract = extract_number (kUINT, &Power, kOPTIONAL);
+    
+    // Extract each of the values.
+    extract_number (kUCHAR, &State, kREQUIRED);
+    PowerExtract = extract_number (kUINT, &Power, kOPTIONAL);
     extract_number (kUCHAR, &SEUseMotionQueue, kOPTIONAL);
 
-	// Bail if we got a conversion error
-	if (error_byte)
-	{
-		return;
-	}
+    // Bail if we got a conversion error
+    if (error_byte)
+    {
+        return;
+    }
 
-	// Limit check
+    // Limit check
     if (Power > 1023)
     {
         Power = 1023;
@@ -2005,16 +2005,16 @@ void parse_SE_packet(void)
         // Do not generate an interrupt
         PIE1bits.TMR2IE = 0;
 
-        TCLKCONbits.T3CCP1 = 1;		// ECCP1 uses Timer1/2 and ECCP2 uses Timer3/4
-        TCLKCONbits.T3CCP2 = 0;		// ECCP1 uses Timer1/2 and ECCP2 uses Timer3/4
+        TCLKCONbits.T3CCP1 = 1;     // ECCP1 uses Timer1/2 and ECCP2 uses Timer3/4
+        TCLKCONbits.T3CCP2 = 0;     // ECCP1 uses Timer1/2 and ECCP2 uses Timer3/4
 
-        CCP1CONbits.CCP1M = 0b1100;	// Set EECP1 as PWM mode
-        CCP1CONbits.P1M = 0b00;		// Enhanced PWM mode: single output
+        CCP1CONbits.CCP1M = 0b1100; // Set EECP1 as PWM mode
+        CCP1CONbits.P1M = 0b00;     // Enhanced PWM mode: single output
 
         // Set up output routing to go to RB3 (RP6)
-        RPOR6 = 14;	// 14 is CCP1/P1A - ECCP1 PWM Output Channel A
+        RPOR6 = 14; // 14 is CCP1/P1A - ECCP1 PWM Output Channel A
 
-        T2CONbits.TMR2ON = 1;		// Turn it on
+        T2CONbits.TMR2ON = 1;       // Turn it on
     }
 
     // Acting on the state is only done if the SE command is not put on the motion queue
@@ -2032,32 +2032,32 @@ void parse_SE_packet(void)
             // Set RB3 to low by setting PWM duty cycle to zero
             CCPR1L = 0;
             CCP1CON = (CCP1CON & 0b11001111);
-        }		
+        }       
     }
     else
     {
         // Trial: Spin here until there's space in the fifo
-    	while(!FIFOEmpty)
+        while(!FIFOEmpty)
         ;
         
         // Set up the motion queue command
         CommandFIFO[0].SEPower = StoredEngraverPower;
-    	CommandFIFO[0].DelayCounter = 0;
+        CommandFIFO[0].DelayCounter = 0;
         CommandFIFO[0].SEState = State;
         CommandFIFO[0].Command = COMMAND_SE;
-        	
+            
         FIFOEmpty = FALSE;
     }
     
-	print_ack();
+    print_ack();
 }
 
 // RM command
 // For Run Motor - allows completely independent running of the two stepper motors
 void parse_RM_packet(void)
 {
-	
-	
+    
+    
 }
 
 // QM command
@@ -2082,13 +2082,13 @@ void parse_QM_packet(void)
     MoveCommandType LocalCommand;
 
     // Need to turn off high priority interrupts breifly here to read out value that ISR uses
-    INTCONbits.GIEH = 0;	// Turn high priority interrupts off
+    INTCONbits.GIEH = 0;    // Turn high priority interrupts off
 
     // Make a local copy of the things we care about
     LocalCommand = CurrentCommand;
 
     // Re-enable interrupts
-    INTCONbits.GIEH = 1;	// Turn high priority interrupts on
+    INTCONbits.GIEH = 1;    // Turn high priority interrupts on
 
     // Create our output values to print back to the PC
     if (LocalCommand.DelayCounter != 0) {
@@ -2108,7 +2108,7 @@ void parse_QM_packet(void)
         Motor2Running = 1;
     }
 
-	printf((far ROM char *)"QM,%i,%i,%i,%i\n\r", CommandExecuting, Motor1Running, Motor2Running, FIFOStatus);
+    printf((far ROM char *)"QM,%i,%i,%i,%i\n\r", CommandExecuting, Motor1Running, Motor2Running, FIFOStatus);
 }
 
 // QS command
@@ -2124,17 +2124,17 @@ void parse_QS_packet(void)
     INT32 step1, step2;
 
     // Need to turn off high priority interrupts breifly here to read out value that ISR uses
-    INTCONbits.GIEH = 0;	// Turn high priority interrupts off
+    INTCONbits.GIEH = 0;    // Turn high priority interrupts off
 
     // Make a local copy of the things we care about
     step1 = globalStepCounter1;
     step2 = globalStepCounter2;
     
     // Re-enable interrupts
-    INTCONbits.GIEH = 1;	// Turn high priority interrupts on
+    INTCONbits.GIEH = 1;    // Turn high priority interrupts on
 
-	printf((far ROM char *)"%li,%li\n\r", step1, step2);
-	print_ack();
+    printf((far ROM char *)"%li,%li\n\r", step1, step2);
+    print_ack();
 }
 
 // CS command
@@ -2145,14 +2145,14 @@ void parse_QS_packet(void)
 void parse_CS_packet(void)
 {
     // Need to turn off high priority interrupts breifly here to read out value that ISR uses
-    INTCONbits.GIEH = 0;	// Turn high priority interrupts off
+    INTCONbits.GIEH = 0;    // Turn high priority interrupts off
 
     // Make a local copy of the things we care about
     globalStepCounter1 = 0;
     globalStepCounter2 = 0;
     
     // Re-enable interrupts
-    INTCONbits.GIEH = 1;	// Turn high priority interrupts on
+    INTCONbits.GIEH = 1;    // Turn high priority interrupts on
 
-	print_ack();
+    print_ack();
 }
