@@ -119,7 +119,7 @@
 unsigned int time_between_updates;
 
 // This byte has each of its bits used as a separate error flag
-unsigned char error_byte;
+unsigned char error_byte = 0;
 
 // Used only in LowISR
 unsigned char A_cur_channel;
@@ -199,7 +199,8 @@ volatile UINT32 gRCServoPoweroffCounterReloadMS = RCSERVO_POWEROFF_DEFAULT_MS;
 void BlinkUSBStatus (void);     // Handles blinking the USB status LED
 BOOL SwitchIsPressed (void);    // Check to see if the user (PRG) switch is pressed
 void parse_packet (void);       // Take a full packet and dispatch it to the right function
-signed char extract_digit (unsigned long * acc, unsigned char digits); // Pull a character out of the packet
+BOOL extract_digit (unsigned long * acc, unsigned char digits); // Pull decimal characters out of the stream
+BOOL extract_hex(unsigned long * acc, unsigned char digits); // Pull ASCII hex characters from input stream
 void parse_R_packet (void);     // R for resetting UBW
 void parse_C_packet (void);     // C for configuring I/O and analog pins
 void parse_CX_packet (void);    // CX For configuring serial port
@@ -2194,37 +2195,71 @@ void parse_SR_packet(void)
 // Just used for testing/debugging the packet parsing routines
 void parse_CK_packet()
 {
-    unsigned char UByte;
-    signed char SByte;
-    unsigned int UInt;
-    signed int SInt;
-    unsigned long ULong;
-    signed long SLong;
-    unsigned char UChar;
-    unsigned char UCaseChar;
-    unsigned char Hex;
+  unsigned char UByte = 0;
+  signed char SByte = 0;
+  unsigned int UInt = 0;
+  signed int SInt = 0;
+  unsigned long ULong = 0;
+  signed long SLong = 0;
+  unsigned char UChar = '0';
+  unsigned char UCaseChar = '0';
+  unsigned long Hex = 0;
 
-    extract_number(kCHAR, &SByte, kREQUIRED);
-    extract_number(kUCHAR, &UByte, kREQUIRED);
-    extract_number(kINT, &SInt, kREQUIRED);
-    extract_number(kUINT, &UInt, kREQUIRED);
-    extract_number(kLONG, &SLong, kREQUIRED);
-    extract_number(kULONG, &ULong, kREQUIRED);
-    extract_number(kASCII_CHAR, &UChar, kREQUIRED);
-    extract_number(kUCASE_ASCII_CHAR, &UCaseChar, kREQUIRED);
-    extract_number(kHEX_BYTE, &Hex, kREQUIRED);
+  if (extract_number(kCHAR, &SByte, kREQUIRED) != kEXTRACT_OK)
+  {
+    return;
+  }
+  printf ((rom char far *)"Param1=%d\r\n", SByte);
 
-    printf ((rom char far *)"Param1=%d\r\n", SByte);
-    printf ((rom char far *)"Param2=%d\r\n", UByte);
-    printf ((rom char far *)"Param3=%d\r\n", SInt);
-    printf ((rom char far *)"Param4=%u\r\n", UInt);
-    printf ((rom char far *)"Param5=%ld\r\n", SLong);
-    printf ((rom char far *)"Param6=%lu\r\n", ULong);
-    printf ((rom char far *)"Param7=%c\r\n", UChar);
-    printf ((rom char far *)"Param8=%c\r\n", UCaseChar);
-    printf ((rom char far *)"Param9=%0X\r\n", Hex);
+  if (extract_number(kUCHAR, &UByte, kREQUIRED) != kEXTRACT_OK)
+  {
+    return;
+  }
+  printf ((rom char far *)"Param2=%d\r\n", UByte);
+
+  if (extract_number(kINT, &SInt, kREQUIRED) != kEXTRACT_OK)
+  {
+    return;
+  }
+  printf ((rom char far *)"Param3=%d\r\n", SInt);
+
+  if (extract_number(kUINT, &UInt, kREQUIRED) != kEXTRACT_OK)
+  {
+    return;
+  }
+  printf ((rom char far *)"Param4=%u\r\n", UInt);
+
+  if (extract_number(kLONG, &SLong, kREQUIRED) != kEXTRACT_OK)
+  {
+    return;
+  }
+  printf ((rom char far *)"Param5=%ld\r\n", SLong);
+
+  if (extract_number(kULONG, &ULong, kREQUIRED) != kEXTRACT_OK)
+  {
+    return;
+  }
+  printf ((rom char far *)"Param6=%lu\r\n", ULong);
+
+  if (extract_number(kASCII_CHAR, &UChar, kREQUIRED) != kEXTRACT_OK)
+  {
+    return;
+  }
+  printf ((rom char far *)"Param7=%c\r\n", UChar);
+
+  if (extract_number(kUCASE_ASCII_CHAR, &UCaseChar, kREQUIRED) != kEXTRACT_OK)
+  {
+    return;
+  }
+  printf ((rom char far *)"Param8=%c\r\n", UCaseChar);
+
+  if (extract_number(kHEX_VALUE, &Hex, kREQUIRED) != kEXTRACT_OK)
+  {
+    return;
+  }
+  printf ((rom char far *)"Param9=%lX\r\n", Hex);
     
-    print_ack();
+  print_ack();
 }
 
 void populateDeviceStringWithName(void)
@@ -2398,211 +2433,232 @@ UINT8 extract_string (
 // Advance the pointer to the byte after the last number
 // and return.
 ExtractReturnType extract_number(
-    ExtractType Type, 
-    void * ReturnValue, 
-    unsigned char Required
+  ExtractType Type, 
+  void * ReturnValue, 
+  unsigned char Required
 )
 {
-    unsigned long ULAccumulator;
-    signed long Accumulator;
-    BOOL Negative = FALSE;
+  unsigned long ULAccumulator;
+  signed long Accumulator;
+  BOOL Negative = FALSE;
 
-    // Check to see if we're already at the end
-    if (kCR == g_RX_buf[g_RX_buf_out])
+  // Check to see if we're already at the end
+  if (kCR == g_RX_buf[g_RX_buf_out])
+  {
+    if (0 == Required)
     {
-        if (0 == Required)
-        {
-            bitset (error_byte, kERROR_BYTE_MISSING_PARAMETER);
-        }
-        return (kEXTRACT_MISSING_PARAMETER);
+      bitset(error_byte, kERROR_BYTE_MISSING_PARAMETER);
     }
+    return(kEXTRACT_MISSING_PARAMETER);
+  }
 
-    // Check for comma where ptr points
-    if (g_RX_buf[g_RX_buf_out] != ',')
+  // Check for comma where ptr points
+  if (g_RX_buf[g_RX_buf_out] != ',')
+  {
+    if(0 == Required)
     {
-        if (0 == Required)
-        {
-            printf ((rom char far *)"!5 Err: Need comma next, found: '%c'\r\n", g_RX_buf[g_RX_buf_out]);
-            bitset (error_byte, kERROR_BYTE_PRINTED_ERROR);
-        }
-        return (kEXTRACT_COMMA_MISSING);
+      printf((rom char far *)"!5 Err: Need comma next, found: '%c'\r\n", g_RX_buf[g_RX_buf_out]);
+      bitset(error_byte, kERROR_BYTE_PRINTED_ERROR);
+    }
+    return(kEXTRACT_COMMA_MISSING);
+  }
+
+  // Move to the next character
+  advance_RX_buf_out();
+
+  // Check for end of command
+  if (kCR == g_RX_buf[g_RX_buf_out])
+  {
+    if (0 == Required)
+    {
+      bitset(error_byte, kERROR_BYTE_MISSING_PARAMETER);
+    }
+    return(kEXTRACT_MISSING_PARAMETER);
+  }
+
+  // Now check for a sign character if we're not looking for ASCII chars
+  if (
+    ('-' == g_RX_buf[g_RX_buf_out]) 
+    && 
+    (
+      (kASCII_CHAR != Type)
+      &&
+      (kUCASE_ASCII_CHAR != Type)
+    )
+  )
+  {
+    // It's an error if we see a negative sign on an unsigned value
+    if (
+      (kUCHAR == Type)
+      ||
+      (kUINT == Type)
+      ||
+      (kULONG == Type)
+      ||
+      (kHEX_VALUE == Type)
+    )
+    {
+printf((rom char far *)"x1\r\n");
+      bitset(error_byte, kERROR_BYTE_PARAMETER_OUTSIDE_LIMIT);
+      return(kEXTRACT_PARAMETER_OUTSIDE_LIMIT);
+    }
+    else
+    {
+      Negative = TRUE;
+      // Move to the next character
+      advance_RX_buf_out();
+    }
+  }
+
+  // If we need to get a digit, go do that
+  if (
+    (kASCII_CHAR != Type)
+    &&
+    (kUCASE_ASCII_CHAR != Type)
+    &&
+    (kHEX_VALUE != Type)
+  )
+  {
+    if (extract_digit(&ULAccumulator, 10) == FALSE)
+    {
+      printf((rom char far *)"!9 Invalid characters in parameter.\r\n");
+      bitset(error_byte, kERROR_BYTE_PRINTED_ERROR);
+      return(kEXTRACT_PARAMETER_OUTSIDE_LIMIT);
+    }
+  }
+  // If we need a hex value, go get it (up to 8 characters worth)
+  else if (kHEX_VALUE == Type)
+  {
+    if (extract_hex(&ULAccumulator, 8) == FALSE)
+    {
+      printf((rom char far *)"!9 Invalid characters in HEX parameter.\r\n");
+      bitset(error_byte, kERROR_BYTE_PRINTED_ERROR);
+      return(kEXTRACT_PARAMETER_OUTSIDE_LIMIT);
+    }
+  }
+  else
+  {
+    // Otherwise just copy the byte
+    ULAccumulator = g_RX_buf[g_RX_buf_out];
+
+    // Force uppercase if that's what type we have
+    if (kUCASE_ASCII_CHAR == Type)
+    {
+      ULAccumulator = toupper (ULAccumulator);
     }
 
     // Move to the next character
-    advance_RX_buf_out ();
+    advance_RX_buf_out();
+  }
 
-    // Check for end of command
-    if (kCR == g_RX_buf[g_RX_buf_out])
-    {
-        if (0 == Required)
-        {
-            bitset (error_byte, kERROR_BYTE_MISSING_PARAMETER);
-        }
-        return (kEXTRACT_MISSING_PARAMETER);
-    }
-    
-    // Now check for a sign character if we're not looking for ASCII chars
+  // Range check absolute values
+  if (Negative)
+  {
     if (
-        ('-' == g_RX_buf[g_RX_buf_out]) 
-        && 
-        (
-            (kASCII_CHAR != Type)
-            &&
-            (kUCASE_ASCII_CHAR != Type)
-            &&
-            (kHEX_BYTE != Type)
-        )
-    )
-    {
-        // It's an error if we see a negative sign on an unsigned value
-        if (
-            (kUCHAR == Type)
-            ||
-            (kUINT == Type)
-            ||
-            (kULONG == Type)
-        )
-        {
-            bitset (error_byte, kERROR_BYTE_PARAMETER_OUTSIDE_LIMIT);
-            return (kEXTRACT_PARAMETER_OUTSIDE_LIMIT);
-        }
-        else
-        {
-            Negative = TRUE;
-            // Move to the next character
-            advance_RX_buf_out ();
-        }
-    }
-
-    // If we need to get a digit, go do that
-    if (
-        (kASCII_CHAR != Type)
+      (
+        kCHAR == Type
         &&
-        (kUCASE_ASCII_CHAR != Type)
+        (ULAccumulator > (unsigned long)128)
+      )
+      ||
+      (
+        kINT == Type
+        &&
+        (ULAccumulator > (unsigned long)32768)
+      )
+      ||
+      (
+        kLONG == Type
+        &&
+        (ULAccumulator > (unsigned long)0x80000000L)
+      )
     )
     {
-        extract_digit(&ULAccumulator, 10);
-    }
-    else
-    {
-        // Otherwise just copy the byte
-        ULAccumulator = g_RX_buf[g_RX_buf_out];
-    
-        // Force uppercase if that's what type we have
-        if (kUCASE_ASCII_CHAR == Type)
-        {
-            ULAccumulator = toupper (ULAccumulator);
-        }
-        
-        // Move to the next character
-        advance_RX_buf_out ();
+printf((rom char far *)"x4\r\n");
+      bitset(error_byte, kERROR_BYTE_PARAMETER_OUTSIDE_LIMIT);
+      return(kEXTRACT_PARAMETER_OUTSIDE_LIMIT);
     }
 
-    // Range check absolute values
+    Accumulator = ULAccumulator;
+    // Then apply the negative if that's the right thing to do
     if (Negative)
     {
-        if (
-            (
-                kCHAR == Type
-                &&
-                (ULAccumulator > (unsigned long)128)
-            )
-            ||
-            (
-                kINT == Type
-                &&
-                (ULAccumulator > (unsigned long)32768)
-            )
-            ||
-            (
-                kLONG == Type
-                &&
-                (ULAccumulator > (unsigned long)0x80000000L)
-            )
-        )
-        {
-            bitset (error_byte, kERROR_BYTE_PARAMETER_OUTSIDE_LIMIT);
-            return (kEXTRACT_PARAMETER_OUTSIDE_LIMIT);
-        }
-
-        Accumulator = ULAccumulator;
-        // Then apply the negative if that's the right thing to do
-        if (Negative)
-        {
-            Accumulator = -Accumulator;
-        }
+      Accumulator = -Accumulator;
     }
-    else
+  }
+  else
+  {
+    if (
+      (
+        kCHAR == Type
+        &&
+        (ULAccumulator > (unsigned long)127)
+      )
+      ||
+      (
+        kUCHAR == Type
+        &&
+        (ULAccumulator > (unsigned long)255)
+      )
+      ||
+      (
+        kINT == Type
+        &&
+        (ULAccumulator > (unsigned long)32767)
+      )
+      ||
+      (
+        kUINT == Type
+        &&
+        (ULAccumulator > (unsigned long)65535)
+      )
+      ||
+      (
+        kLONG == Type
+        &&
+        (ULAccumulator > (unsigned long)0x7FFFFFFFL)
+      )
+    )
     {
-        if (
-            (
-                kCHAR == Type
-                &&
-                (ULAccumulator > (unsigned long)127)
-            )
-            ||
-            (
-                kUCHAR == Type
-                &&
-                (ULAccumulator > (unsigned long)255)
-            )
-            ||
-            (
-                kINT == Type
-                &&
-                (ULAccumulator > (unsigned long)32767)
-            )
-            ||
-            (
-                kUINT == Type
-                &&
-                (ULAccumulator > (unsigned long)65535)
-            )
-            ||
-            (
-                kLONG == Type
-                &&
-                (ULAccumulator > (unsigned long)0x7FFFFFFFL)
-            )
-        )
-        {
-            bitset (error_byte, kERROR_BYTE_PARAMETER_OUTSIDE_LIMIT);
-            return (kEXTRACT_PARAMETER_OUTSIDE_LIMIT);
-        }
-
-        if (kULONG != Type)
-        {
-            Accumulator = ULAccumulator;
-        }
+printf((rom char far *)"x5\r\n");
+      bitset(error_byte, kERROR_BYTE_PARAMETER_OUTSIDE_LIMIT);
+      return(kEXTRACT_PARAMETER_OUTSIDE_LIMIT);
     }
 
-    // If all went well, then copy the result
-    switch (Type)
-    {   
-        case kCHAR:
-            *(signed char *)ReturnValue = (signed char)Accumulator;
-            break;
-        case kUCHAR:
-        case kASCII_CHAR:
-        case kUCASE_ASCII_CHAR:
-            *(unsigned char *)ReturnValue = (unsigned char)Accumulator;
-            break;
-        case kINT:
-            *(signed int *)ReturnValue = (signed int)Accumulator;
-            break;
-        case kUINT:
-            *(unsigned int *)ReturnValue = (unsigned int)Accumulator;
-            break;
-        case kLONG:
-            *(signed long *)ReturnValue = Accumulator;
-            break;
-        case kULONG:
-            *(unsigned long *)ReturnValue = ULAccumulator;
-            break;
-        default:
-            return (kEXTRACT_INVALID_TYPE);
-    }   
-    return(kEXTRACT_OK);    
+    if (kULONG != Type && kHEX_VALUE != Type)
+    {
+      Accumulator = ULAccumulator;
+    }
+  }
+
+  // If all went well, then copy the result
+  switch (Type)
+  {   
+    case kCHAR:
+      *(signed char *)ReturnValue = (signed char)Accumulator;
+      break;
+    case kUCHAR:
+    case kASCII_CHAR:
+    case kUCASE_ASCII_CHAR:
+      *(unsigned char *)ReturnValue = (unsigned char)Accumulator;
+      break;
+    case kINT:
+      *(signed int *)ReturnValue = (signed int)Accumulator;
+      break;
+    case kUINT:
+      *(unsigned int *)ReturnValue = (unsigned int)Accumulator;
+      break;
+    case kLONG:
+      *(signed long *)ReturnValue = Accumulator;
+      break;
+    case kULONG:
+    case kHEX_VALUE:
+      *(unsigned long *)ReturnValue = ULAccumulator;
+      break;
+    default:
+      return(kEXTRACT_INVALID_TYPE);
+  }   
+  return(kEXTRACT_OK);    
 }
 
 // Loop 'digits' number of times, looking at the
@@ -2611,29 +2667,74 @@ ExtractReturnType extract_number(
 // powers of ten as well. If you hit a non-numerical
 // char, then return FALSE, otherwise return TRUE.
 // Store result as you go in *acc.
-signed char extract_digit(unsigned long * acc,  unsigned char digits)
+BOOL extract_digit(unsigned long * acc, unsigned char digits)
 {
-    unsigned char val;
-    unsigned char digit_cnt;
-    
-    *acc = 0;
+  unsigned char val;
+  unsigned char digit_cnt;
 
-    for (digit_cnt = 0; digit_cnt < digits; digit_cnt++)
+  *acc = 0;
+
+  for (digit_cnt = 0; digit_cnt < digits; digit_cnt++)
+  {
+    val = g_RX_buf[g_RX_buf_out];
+    if ((val >= 48) && (val <= 57))
     {
-        val = g_RX_buf[g_RX_buf_out];
-        if ((val >= 48) && (val <= 57))
-        {
-            *acc = (*acc * 10) + (val - 48);
-            // Move to the next character
-            advance_RX_buf_out ();
-        }
-        else
-        {
-            return (FALSE);
-        }
+      *acc = (*acc * 10) + (val - 48);
+      // Move to the next character
+      advance_RX_buf_out();
     }
-    return (TRUE);
+    // If the character we're looking at indicates the end of this value
+    else if (val == ',' || val == '\r' || val == '\n')
+    {  
+      break;
+    }
+    else
+    {
+      return(FALSE);
+    }
+  }
+  return(TRUE);
 }
+
+// Extract digits ASCII characters from the input stream. They both must all be
+// 'a-f', 'A-F' or '0-9'. Then combine them into one unsigned long value.
+BOOL extract_hex(unsigned long * acc, unsigned char digits)
+{
+  unsigned char val;
+  unsigned char digit_cnt;
+  *acc = 0;
+
+  for (digit_cnt = 0; digit_cnt < digits; digit_cnt++)
+  {
+    val = g_RX_buf[g_RX_buf_out];
+    if (val >= '0' && val <= '9')
+    {
+      val = val - '0';
+    }
+    else if (val >= 'A' && val <= 'F')
+    {
+      val = val - ('A' - 10);
+    }
+    else if (val >= 'a' && val <= 'f')
+    {
+      val = val - ('a' - 10);
+    }
+    // If the character we're looking at indicates the end of this value
+    else if (val == ',' || val == '\r' || val == '\n')
+    {  
+      break;
+    }
+    // Getting here means we got a non-hex character
+    else
+    {
+      return(FALSE);
+    }
+    *acc = (*acc << 4) | val;
+    advance_RX_buf_out();
+  }
+  return(TRUE);
+}
+
 
 /******************************************************************************
  * Function:        void BlinkUSBStatus(void)

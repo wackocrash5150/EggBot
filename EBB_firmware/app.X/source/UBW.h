@@ -89,7 +89,7 @@ typedef enum {
   ,kUCASE_ASCII_CHAR  // ASCII character, must be uppercase
   ,kLONG          // Four bytes, signed
   ,kULONG         // Four bytes, unsigned
-  ,kHEX_BYTE      // two ASCII hex chars (upper/lowercase), converted to one unsigned char
+  ,kHEX_VALUE     // one to eight ASCII hex chars (upper/lowercase), converted to unsigned long
 } ExtractType;
 
 typedef enum {
