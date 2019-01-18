@@ -9,7 +9,7 @@
 #define	SPI_H
 
 void spi_init(void);
-void spi_send(unsigned char command, unsigned long int sendData); 
+UINT32 spi_send_receive(UINT8 * rec_command, UINT8 send_command, UINT32 sendData); 
 void parse_TS_packet(void);
 
 #endif	/* SPI_H */

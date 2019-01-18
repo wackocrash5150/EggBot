@@ -192,13 +192,13 @@ void RCServo2_Init(void)
 	// Set up TIMER3
 	T3CONbits.TMR3CS = 0b00;  	// Use Fosc/4 as input
 	T3CONbits.T3CKPS = 0b00;  	// Prescale is 1:1
-	T3CONbits.RD16 = 1;			// Enable 16 bit mode
+	T3CONbits.RD16 = 1;         // Enable 16 bit mode
 	TMR3H = 0;
 	TMR3L = 0;
-	T3CONbits.TMR3ON = 0;		// Keep timer off for now
+	T3CONbits.TMR3ON = 0;       // Keep timer off for now
 	
-	TCLKCONbits.T3CCP1 = 1;		// ECCP1 uses Timer1/2 and ECCP2 uses Timer3/4
-	TCLKCONbits.T3CCP2 = 0;		// ECCP1 uses Timer1/2 and ECCP2 uses Timer3/4
+	TCLKCONbits.T3CCP1 = 1;     // ECCP1 uses Timer1/2 and ECCP2 uses Timer3/4
+	TCLKCONbits.T3CCP2 = 0;     // ECCP1 uses Timer1/2 and ECCP2 uses Timer3/4
 
 	CCP2CONbits.CCP2M = 0b1001;	// Set EECP2 as compare, clear output on match
 
@@ -217,7 +217,7 @@ void RCServo2_Init(void)
 	g_servo2_rate_up = 400;
 	g_servo2_rate_down = 400;
 	process_SP(PEN_UP, 0);			// Start servo up
-    RCServoPowerIO = RCSERVO_POWER_OFF;
+  RCServoPowerIO = RCSERVO_POWER_OFF;
 }
 
 // Return the current channel that is associated with the PPS output pin
@@ -269,13 +269,13 @@ void RCServo2_S2_command (void)
 	UINT16 Duration = 0;
 	UINT8 Pin = 0;
 	UINT16 Rate = 0;
-    UINT16 Delay = 0;
+  UINT16 Delay = 0;
 
 	// Extract each of the values.
 	extract_number (kUINT, &Duration, kOPTIONAL);
 	extract_number (kUCHAR, &Pin, kOPTIONAL);
 	extract_number (kUINT, &Rate, kOPTIONAL);
-    extract_number (kUINT, &Delay, kOPTIONAL);
+  extract_number (kUINT, &Delay, kOPTIONAL);
 
 	// Bail if we got a conversion error
 	if (error_byte)
@@ -302,9 +302,9 @@ void RCServo2_S2_command (void)
 //      (See schematic for a list of each RPn number for each GPIO pin.)
 // <Rate> is how quickly to move to the new position. Use 0 for instant change.
 //      Unit is 83uS of pulse width change every 24ms of time.
-// <Delay> is how many milliseconds after this command is excuted before the
+// <Delay> is how many milliseconds after this command is executed before the
 //      next command in the motion control FIFO is executed. 0 will run the next
-//      command immediatly.
+//      command immediately.
 // This function will allocate a new channel for RPn if the pin is not already
 // assigned to a channel. It will return the channel number used when it
 // returns. If you send in 0 for Duration, the channel for RPn will be de-
@@ -322,6 +322,8 @@ UINT8 RCServo2_Move(
     UINT8 i;
     UINT8 Channel;
 
+    printf ((rom char far *)"RPn of %d was requested.\r\n", RPn);
+
     // Get the channel that's already assigned to the RPn, or assign a new one
     // if possible. If this returns zero, then do nothing as we're out of
     // channels.
@@ -338,6 +340,10 @@ UINT8 RCServo2_Move(
     {
         // Turn off the PPS routing to the pin
         *(gRC2RPORPtr + gRC2RPn[Channel - 1]) = 0;
+        if (gRC2RPn[Channel - 1] == 0)
+        {
+          printf ((rom char far *)"Yelp\r\n");
+        }
         gRC2Rate[Channel - 1] = 0;
         gRC2Target[Channel - 1] = 0;
         gRC2RPn[Channel - 1] = 0;
@@ -348,7 +354,7 @@ UINT8 RCServo2_Move(
         // If we have a valid channel, and RPn, then make the move
         if ((Channel - 1) < gRC2Slots && RPn <= 24)
         {
-            // As a speical case, if the pin is the same as the pin
+            // As a special case, if the pin is the same as the pin
             // used for the solenoid, then turn off the solenoid function
             // so that we can output PWM on that pin
             if (RPn == PEN_UP_DOWN_RPN)

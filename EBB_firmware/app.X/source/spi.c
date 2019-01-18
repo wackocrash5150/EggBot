@@ -6,6 +6,8 @@
 
 void spi_init(void)
 {
+  UINT8 temp;
+  
   // Set up SPI2 and RP pins
   // Inputs
   // SDI2 RPINR21    RB4 (RP7)
@@ -34,9 +36,9 @@ void spi_init(void)
   SSP2CON1bits.CKP = 1;         // Clock idles high
   SSP2CON1bits.SSPEN = 1;       // Turn MSSP2 (SPI2) peripheral on
 
-//  spi_send(0x00 + 0x01, 0x00000000);   // Read GStat
-//  spi_send(0x00 + 0x01, 0x00000000);   // Read GStat
-//  spi_send(0x00 + 0x01, 0x00000000);   // Read GStat
+  spi_send_receive(&temp, 0x00 + 0x01, 0x00000000);   // Read GStat
+  spi_send_receive(&temp, 0x00 + 0x01, 0x00000000);   // Read GStat
+  spi_send_receive(&temp, 0x00 + 0x01, 0x00000000);   // Read GStat
   
 //  spi_send(0x80 + 0x00, 0x00000008);   // GCONF=8: Enable PP and INT outputs
 //  spi_send(0x80 + 0x6C, 0x000100C5);   // CHOPCONF: TOFF=5, HSRTR=4, HEND=1, TBL=2, CHM=0 (spreadCycle)
@@ -85,32 +87,37 @@ void spi_init(void)
 }
 
 /// TODO: Add timeout?
-UINT32 spi_send_receive(UINT8 * recieved_command, unsigned char send_command, unsigned long int sendData)
+UINT32 spi_send_receive(UINT8 * recieved_command, UINT8 send_command, UINT32 sendData)
 {
-  volatile unsigned char temp;
-  unsigned char sd1, sd2, sd3, sd4;
+  volatile UINT8 temp;
+  UINT8 sd1, sd2, sd3, sd4;
   UINT32 result = 0;
+  UINT8 dummy;
   
-  sd1 = sendData >> 24;
-  sd2 = sendData >> 16;
-  sd3 = sendData >> 8;
-  sd4 = sendData;
+  /// TODO! Find out why this is necessary. What other code is overwriting this between
+  /// booup and first TS command?
+  RPOR0 = 10;                   // Set SCK2 to use RP0 pin
+
+  sd1 = (sendData >> 24) & 0xFF;
+  sd2 = (sendData >> 16) & 0xFF;
+  sd3 = (sendData >> 8) & 0xFF;
+  sd4 = sendData & 0xFF;
   
   LATAbits.LATA2 = 0;           // Chip select goes low
   
-  *recieved_command = SSP2BUF;
+  dummy = SSP2BUF;
   SSP2BUF = send_command;
   while (SSP2STATbits.BF == 0)
   {
     ;
   }
-  result = SSP2BUF;
+  *recieved_command = SSP2BUF;
   SSP2BUF = sd1;
   while (SSP2STATbits.BF == 0)
   {
     ;
   }
-  result = (result << 8) | SSP2BUF;
+  result = SSP2BUF;
   SSP2BUF = sd2;
   while (SSP2STATbits.BF == 0)
   {
@@ -128,77 +135,43 @@ UINT32 spi_send_receive(UINT8 * recieved_command, unsigned char send_command, un
   {
     ;
   }
+  result = (result << 8) | SSP2BUF;
   
   LATAbits.LATA2 = 1;           // Chip select goes high
   return(result);
 }
 
-UINT8 extractHex(void)
-{
-  UINT8 temp = 0;
-  UINT8 c1, c2;
-
-  extract_number (kASCII_CHAR, &c1, kREQUIRED);
-  extract_number (kASCII_CHAR, &c2, kREQUIRED);
-
-  if (c1 >= 48 && c1 <= 57)
-  {
-    c1 = c1 - 48;
-  }
-  else if (c1 >= 65 && c1 <= 70)
-  {
-    c1 = c1 - 75;
-  }
-  else
-  {
-    c1 = 0;
-  }
-  if (c2 >= 48 && c2 <= 57)
-  {
-    c2 = c2 - 48;
-  }
-  else if (c2 >= 65 && c2 <= 70)
-  {
-    c2 = c2 - 75;
-  }
-  else
-  {
-    c2 = 0;
-  }
-  temp = c1 << 4 | c2;
-  return(temp);
-}
-
 // The SPI Send/Receive
-// Usage: SS,<byte1>,<byte2>,<byte3>,<byte4>,<byte5><CR>
-// <byte1> .. <byte5> Bytes sent out, starting with byte1
+// Usage: SS,<send_command>,<send_data>><CR>
+// <send_comamnd> : hex value (0 to FF) which is sent as the command
+// <send_data>    : hex value (0 to FFFFFFFF) which is sent as the data
 // Reply:
-// <reply_byte1>,<reply_byte2>,<reply_byte3>,<reply_byte4>,<reply_byte5>,<cr><lf>
+// <received_command>,<received_data>,<cr><lf>
+// <received_command> : hex value (00 to FF)
+// <recevied_data>    : hex value (00000000 to FFFFFFFF)
 void parse_TS_packet (void)
 {
+  UINT32 temp;
   UINT8 send_cmd;
   UINT8 rec_cmd;
   UINT32 send_data;
   UINT32 rec_data;
 
-  send_cmd = extractHex();
-  send_data = extractHex();
-  send_data = (send_data << 8) || extractHex();
-  send_data = (send_data << 8) || extractHex();
-  send_data = (send_data << 8) || extractHex();
-
-  // Bail if we got a conversion error
-  if (error_byte)
+  if (extract_number(kHEX_VALUE, &temp, kREQUIRED) != kEXTRACT_OK)
   {
     return;
   }
+  if (extract_number(kHEX_VALUE, &send_data, kREQUIRED) != kEXTRACT_OK)
+  {
+    return;
+  }
+
+  send_cmd = temp;
+  
   rec_data = spi_send_receive(&rec_cmd, send_cmd, send_data);
 
-  printf((far rom char *)"%0X,%0X,%0X,%0X,%0X\r\n", 
+  printf((far rom char *)"%02X,%08lX\r\n", 
     rec_cmd,
-    rec_data >> 24,
-    (rec_data >> 16) & 0xFF,
-    (rec_data >> 8) & 0xFF,
-    rec_data & 0xFF
+    rec_data
   );
 }
