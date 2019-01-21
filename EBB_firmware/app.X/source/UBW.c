@@ -260,7 +260,7 @@ void low_ISR(void)
             gRC2msCounter = 0;
 
             // Turn off the PPS routing to the 'old' pin
-            *(gRC2RPORPtr + gRC2RPn[gRC2Ptr]) = 0;
+//            *(gRC2RPORPtr + gRC2RPn[gRC2Ptr]) = 0;
 
             // Turn off TIMER3 for now
             T3CONbits.TMR3ON = 0;
@@ -323,7 +323,7 @@ void low_ISR(void)
                 }
 
                 // Set up the PPS routing for the CCP2
-                *(gRC2RPORPtr + gRC2RPn[gRC2Ptr]) = 18; // 18 = CCP2
+//                *(gRC2RPORPtr + gRC2RPn[gRC2Ptr]) = 18; // 18 = CCP2
 
                 // Disable interrupts (high)
                 INTCONbits.GIEH = 0;

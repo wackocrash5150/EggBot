@@ -54,6 +54,8 @@
 #include "GenericTypeDefs.h"
 #include "Compiler.h"
 
+//#define EBB_2_3
+
 #define kTX_BUF_SIZE            64        // In bytes
 #define kRX_BUF_SIZE           256        // In bytes
 #define kRX_COMMAND_BUF_SIZE    64        // In bytes
