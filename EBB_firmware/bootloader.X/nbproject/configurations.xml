@@ -417,7 +417,7 @@
         <property key="stack-analysis-mplink" value="false"/>
       </C18LanguageToolchain>
       <PICkit3PlatformTool>
-        <property key="AutoSelectMemRanges" value="auto"/>
+        <property key="AutoSelectMemRanges" value="manual"/>
         <property key="Freeze Peripherals" value="true"/>
         <property key="SecureSegment.SegmentProgramming" value="FullChipProgramming"/>
         <property key="ToolFirmwareFilePath"
@@ -427,7 +427,7 @@
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="memories.aux" value="false"/>
         <property key="memories.bootflash" value="false"/>
-        <property key="memories.configurationmemory" value="false"/>
+        <property key="memories.configurationmemory" value="true"/>
         <property key="memories.configurationmemory2" value="true"/>
         <property key="memories.dataflash" value="true"/>
         <property key="memories.eeprom" value="false"/>

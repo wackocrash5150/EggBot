@@ -108,7 +108,7 @@
   #define CLOCK_FREQ 48000000
 
   /** L E D ***********************************************************/
-  /* On EBB v40, LED1 (USB) = RC6, LED2 (USR) = RD3, SW = RC7			*/
+  /* On SHB v10, LED1 (USB) = RC6, LED2 (USR) = RD3, SW = RC7			*/
   #define mInitAllLEDs()      LATDbits.LATD3 = 0; LATCbits.LATC6 = 0; TRISDbits.TRISD3 = 0; TRISCbits.TRISC6 = 0;
   #define mLED_1              LATCbits.LATC6
   #define mLED_2              LATDbits.LATD3
@@ -120,15 +120,17 @@
   /** R E F   A N A L O G   I N P U T *********************************/
 //  #define RefRA0_IO_TRIS      TRISAbits.TRISA0
 
-  /** P E N   U P  D O W N *******************************************/
-  #define PenUpDownIO         LATDbits.LATD5
-  #define PEN_UP_DOWN_RPN     22
-  #define PenUpDownIO_TRIS    TRISDbits.TRISD5
+  /** PEN UP DOWN SOLENOID I/O ****************************************/
+  #define PenUpDownIO         LATBbits.LATB2    // LIM4
+  #define PenUpDownIO_TRIS    TRISBbits.TRISB2
 
-  /** R C   S E R V O  ************************************************/
-  #define RCServoPowerIO_TRIS TRISDbits.TRISD7
-  #define RCServoPowerIO      LATDbits.LATD7
-  #define RCServoPowerIO_PORT PORTDbits.RD7
+  /** PEN UP DOWN SERVO ***********************************************/
+  #define PEN_UP_DOWN_RPN     21                // SRV1
+  
+  /** RC SERVO POWER CONTROL ******************************************/
+  #define RCServoPowerIO_TRIS TRISAbits.TRISA3
+  #define RCServoPowerIO      LATAbits.LATA3
+  #define RCServoPowerIO_PORT PORTAbits.RA3
   #define RCSERVO_POWER_ON    1
   #define RCSERVO_POWER_OFF   0
 

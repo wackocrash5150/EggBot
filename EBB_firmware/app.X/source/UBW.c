@@ -132,7 +132,7 @@ const rom char st_OK[] = {"OK\r\n"};
 const rom char st_LFCR[] = {"\r\n"};
 
 /// TODO: Can we make this cleaner? Maybe using macros or something? One version number and one board rev.
-const rom char st_version[] = {"EBBv4 Firmware Version 4.0.0t1\r\n"};
+const rom char st_version[] = {"EBBv4 Firmware Version 4.0.0t2\r\n"};
 
 #pragma udata ISR_buf = 0x100
 volatile unsigned int ISR_A_FIFO[16];                       // Stores the most recent analog conversions
@@ -260,7 +260,7 @@ void low_ISR(void)
             gRC2msCounter = 0;
 
             // Turn off the PPS routing to the 'old' pin
-//            *(gRC2RPORPtr + gRC2RPn[gRC2Ptr]) = 0;
+            *(gRC2RPORPtr + gRC2RPn[gRC2Ptr]) = 0;
 
             // Turn off TIMER3 for now
             T3CONbits.TMR3ON = 0;
@@ -323,7 +323,7 @@ void low_ISR(void)
                 }
 
                 // Set up the PPS routing for the CCP2
-//                *(gRC2RPORPtr + gRC2RPn[gRC2Ptr]) = 18; // 18 = CCP2
+                *(gRC2RPORPtr + gRC2RPn[gRC2Ptr]) = 18; // 18 = CCP2
 
                 // Disable interrupts (high)
                 INTCONbits.GIEH = 0;
@@ -439,7 +439,6 @@ void low_ISR(void)
                 RCServoPowerIO = RCSERVO_POWER_OFF;
             }
         }
-
     } // end of 1ms interrupt
 
     // Do we have an analog interrupt?

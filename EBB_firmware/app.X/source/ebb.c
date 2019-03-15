@@ -403,9 +403,10 @@ void high_ISR(void)
         }
       }
 
-      // If this servo is the pen servo (on g_servo2_RPn)
-      if (CurrentCommand.ServoRPn == g_servo2_RPn)
+      // If this servo is the pen servo (on PEN_UP_DOWN_RPN)
+      if (CurrentCommand.ServoRPn == PEN_UP_DOWN_RPN)
       {
+
         // Then set its new state based on the new position
         if (CurrentCommand.ServoPosition == g_servo2_min)
         {
@@ -471,7 +472,7 @@ void high_ISR(void)
       }
       else 
       {
-          CurrentCommand.DelayCounter = 0;
+        CurrentCommand.DelayCounter = 0;
       }
     }
 
@@ -607,6 +608,22 @@ void EBB_Init(void)
 
   // Clear out global stepper positions
   parse_CS_packet();
+  
+  /// DEBUG ONLY CODE ///
+  /// REMOVE FOR PRODUCTION ///
+  TRISAbits.TRISA5 = 0;
+  TRISEbits.TRISE1 = 0;
+  TRISAbits.TRISA7 = 0;
+  TRISCbits.TRISC0 = 0;
+  LATAbits.LATA5 = 1;
+  LATEbits.LATE1 = 1;
+  LATAbits.LATA7 = 1;
+  LATCbits.LATC0 = 1;
+  LATAbits.LATA5 = 0;
+  LATEbits.LATE1 = 0;
+  LATAbits.LATA7 = 0;
+  LATCbits.LATC0 = 0;
+  
 }
 
 // Stepper (mode) Configure command
@@ -657,7 +674,7 @@ void parse_SC_packet (void)
       gUseSolenoid = TRUE;
       gUseRCPenServo = FALSE;
       // Turn off RC signal on Pen Servo output
-      RCServo2_Move(0, g_servo2_RPn, 0, 0);
+      RCServo2_Move(0, PEN_UP_DOWN_RPN, 0, 0);
     }
     // Use just RC servo
     else if (Para2 == 1)
@@ -1575,19 +1592,19 @@ void parse_TP_packet(void)
 }
 
 // Set Pen
-// Usage: SP,<State>,<Duration>,<PortB_Pin><CR>
+// Usage: SP,<State>,<Duration><CR>
 // <State> is 0 (for goto servo_max) or 1 (for goto servo_min)
 // <Duration> is how long to wait before the next command in the motion control 
 //      FIFO should start. (defaults to 0mS)
 //      Note that the units of this parameter is either 1ms
-// <PortB_Pin> Is a value from 0 to 7 and allows you to re-assign the Pen
-//      RC Servo output to different PortB pins.
-// This is a command that the user can send from the PC to set the pen state.
-// Note that there is only one pen RC servo output - if you use the <PortB_Pin>
-// parameter, then that new pin becomes the pen RC servo output. This command
-// does not allow for multiple servo signals at the same time from port B pins.
-// Use the S2 command for that.
 //
+// This is a command that the user can send from the PC to set the pen state.
+// This command does not allow for multiple servo signals at the same time from 
+// port B pins. Use the S2 command for that.
+//
+// New for SHB: This command will always use the default pen up/down servo
+// output pin, and this pin can't be changed.
+// 
 // This function will use the values for <serv_min>, <servo_max>,
 // <servo_rate_up> and <servo_rate_down> (SC,4 SC,5, SC,11, SC,10 commands)
 // when it schedules the servo command.
@@ -1599,13 +1616,10 @@ void parse_SP_packet(void)
 {
     UINT8 State = 0;
     UINT16 CommandDuration = 0;
-    UINT8 Pin = DEFAULT_EBB_SERVO_PORTD_PIN;
-    ExtractReturnType Ret;
 
     // Extract each of the values.
     extract_number (kUCHAR, &State, kREQUIRED);
     extract_number (kUINT, &CommandDuration, kOPTIONAL);
-    Ret = extract_number (kUCHAR, &Pin, kOPTIONAL);
 
     // Bail if we got a conversion error
     if (error_byte)
@@ -1613,26 +1627,9 @@ void parse_SP_packet(void)
         return;
     }
 
-    // Error check
-    if (Pin > 7)
-    {
-        Pin = DEFAULT_EBB_SERVO_PORTD_PIN;
-    }
-
     if (State > 1)
     {
         State = 1;
-    }
-
-    // Set the PRn of the Pen Servo output
-    // Add 3 to get from PORTB pin number to RPn number
-    if (g_servo2_RPn != (Pin + 3))
-    {
-        // if we are changing which pin the pen servo is on, we need to cancel
-        // the servo output on the old channel first
-        RCServo2_Move(0, g_servo2_RPn, 0, 0);
-        // Now record the new RPn
-        g_servo2_RPn = Pin + 3;
     }
 
     // Execute the servo state change
@@ -1670,7 +1667,7 @@ void process_SP(PenStateType NewState, UINT16 CommandDuration)
     gRCServoPoweroffCounterMS = gRCServoPoweroffCounterReloadMS;
 
     // Now schedule the movement with the RCServo2 function
-    RCServo2_Move(Position, g_servo2_RPn, Rate, CommandDuration);
+    RCServo2_Move(Position, PEN_UP_DOWN_RPN, Rate, CommandDuration);
 }
 
 // Enable Motor
@@ -1936,7 +1933,7 @@ void parse_QC_packet(void)
 // <power> is 10 bit PWM power level (optional). 0 = 0%, 1023 = 100%
 // <use_motion_queue> if 1 then put this command in motion queue (optional))
 // We boot up with <power> at 0
-// The engraver motor is always assumed to be on RB3
+// The engraver motor is always assumed to be on RD6
 // So our init routine will map ECCP1
 //
 // Timer0 is RC command
@@ -2011,8 +2008,8 @@ void parse_SE_packet(void)
         CCP1CONbits.CCP1M = 0b1100; // Set EECP1 as PWM mode
         CCP1CONbits.P1M = 0b00;     // Enhanced PWM mode: single output
 
-        // Set up output routing to go to RB3 (RP6)
-        RPOR6 = 14; // 14 is CCP1/P1A - ECCP1 PWM Output Channel A
+        // Set up output routing to go to RD6 (RP23)
+        RPOR23 = 14; // 14 is CCP1/P1A - ECCP1 PWM Output Channel A
 
         T2CONbits.TMR2ON = 1;       // Turn it on
     }
@@ -2023,13 +2020,13 @@ void parse_SE_packet(void)
         // Now act on the State
         if (State)
         {
-            // Set RB3 to StoredEngraverPower
+            // Set RD6 to StoredEngraverPower
             CCPR1L = StoredEngraverPower >> 2;
             CCP1CON = (CCP1CON & 0b11001111) | ((StoredEngraverPower << 4) & 0b00110000);
         }
         else
         {
-            // Set RB3 to low by setting PWM duty cycle to zero
+            // Set RD6 to low by setting PWM duty cycle to zero
             CCPR1L = 0;
             CCP1CON = (CCP1CON & 0b11001111);
         }       
