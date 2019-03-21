@@ -24,7 +24,7 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 
 
 # Project Name
-PROJECTNAME=app.X
+PROJECTNAME=SHB_Firmware.X
 
 # Active Configuration
 DEFAULTCONF=EBB_v40_with_bootloader
