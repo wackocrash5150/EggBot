@@ -239,6 +239,10 @@
 //                - CU,3 command added to read/write FIFO size
 //                - QG,2 command added to query current FIFO depth
 //                - Motion control commands re-written to use variable FIFO sizes
+// 2.8.0 03/09/20 - Added true 3D motion commands :
+//                  * Made true 3rd axis, equal to other two
+//                  * Mapped third axis to normal pen servo output
+//                - Added S3, X3 and L3 to fully use 3rd axis (servo)
 
 #include <p18cxxx.h>
 #include <usart.h>
@@ -313,7 +317,7 @@ UINT16          FIFO_ServoPosition[COMMAND_FIFO_LENGTH];
 UINT16          FIFO_ServoRate[COMMAND_FIFO_LENGTH];
 INT32           FIFO_StepAddInc[NUMBER_OF_STEPPERS][COMMAND_FIFO_LENGTH];
 #pragma udata FIFO5=0xC00
-CommandType     FIFO_Command[COMMAND_FIFO_LENGTH];
+UINT8           FIFO_Command[COMMAND_FIFO_LENGTH];
 UINT8           FIFO_ServoRPn[COMMAND_FIFO_LENGTH];
 UINT8           FIFO_SEState[COMMAND_FIFO_LENGTH];
 
@@ -384,33 +388,29 @@ PORTDbits.RD0 = 1;
     if (FIFODepth)
     {
 PORTDbits.RD1 = 1;
+      /* Only Delay commands and Servo Moves use the delay value, so it's stored
+       * in FIFO_StepsCounter[0] now for those commands. */
 
-      // Note, you don't even need a command to delay. Any command can have
-      // a delay associated with it, if DelayCounter is != 0.
-      if (FIFO_DelayCounter[FIFOOut])
+      if (FIFO_Command[FIFOOut] == COMMAND_DELAY || FIFO_Command[FIFOOut] == COMMAND_SERVO_MOVE)
       {
-        // Double check that things aren't way too big
-        if (FIFO_DelayCounter[FIFOOut] > HIGH_ISR_TICKS_PER_MS * (UINT32)0x10000)
+        if (FIFO_StepsCounter[0][FIFOOut])
         {
-          FIFO_DelayCounter[FIFOOut] = 0;
+          // Double check that things aren't way too big
+          if (FIFO_StepsCounter[0][FIFOOut] > HIGH_ISR_TICKS_PER_MS * (UINT32)0x10000)
+          {
+            FIFO_StepsCounter[0][FIFOOut] = 0;
+          }
+          else 
+          {
+            FIFO_StepsCounter[0][FIFOOut]--;
+          }
         }
-        else {
-          FIFO_DelayCounter[FIFOOut]--;
+        if (FIFO_StepsCounter[0][FIFOOut])
+        {
+            AllDone = FALSE;
         }
       }
 
-      if (FIFO_DelayCounter[FIFOOut])
-      {
-          AllDone = FALSE;
-      }
-
-      // Not sure why this is here? For debugging? If so, then #ifdef it out for release build
-      //PORTDbits.RD1 = 0;
-
-      // Note: by not making this an else-if, we have our DelayCounter
-      // counting done at the same time as our motor move or servo move.
-      // This allows the delay time to start counting at the beginning of the
-      // command execution.
       if (FIFO_Command[FIFOOut] == COMMAND_MOTOR_MOVE)
       {
         // Only output DIR bits if we are actually doing something
@@ -643,11 +643,10 @@ PORTDbits.RD1 = 1;
           CCPR1L = 0;
           CCP1CON = (CCP1CON & 0b11001111);
         }
-        AllDone = TRUE;
       }
 
-      // If we're done with our current command, load in the next one, if there's more
-      if (AllDone && FIFO_DelayCounter[FIFOOut] == 0)
+      // If we're done with our current command, load in the next one, if there are any more
+      if (AllDone)
       {
         // "Erase" the current command from the FIFO
         FIFO_Command[FIFOOut] = COMMAND_NONE;

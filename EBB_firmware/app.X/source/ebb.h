@@ -64,21 +64,18 @@ typedef enum
   PEN_UP
 } PenStateType;
 
-/* Enum that lists each type of command that can be put in the motion control FIFO */
-typedef enum
-{
-  COMMAND_NONE = 0,
-  COMMAND_MOTOR_MOVE,
-  COMMAND_DELAY,
-  COMMAND_SERVO_MOVE,
-  COMMAND_SE
-} CommandType;
+/* Defines that list each type of command that can be put in the motion control FIFO */
+#define COMMAND_NONE          0
+#define COMMAND_MOTOR_MOVE    1
+#define COMMAND_DELAY         2
+#define COMMAND_SERVO_MOVE    3
+#define COMMAND_SE            4
 
 // This structure defines the elements of the move commands in the FIFO that
 // are sent from the command parser to the ISR move engine.
 typedef struct
 {
-  CommandType     Command;
+  UINT8           Command;
   INT32           StepAdd[NUMBER_OF_STEPPERS];
   INT32           StepAddInc[NUMBER_OF_STEPPERS];
   UINT32          StepsCounter[NUMBER_OF_STEPPERS];
@@ -116,7 +113,7 @@ typedef struct
 #define COMMAND_FIFO_LENGTH     (25)
 
 ///extern MoveCommandType CommandFIFO[];
-extern CommandType     FIFO_Command[COMMAND_FIFO_LENGTH];
+extern UINT8           FIFO_Command[COMMAND_FIFO_LENGTH];
 extern INT32           FIFO_StepAdd[NUMBER_OF_STEPPERS][COMMAND_FIFO_LENGTH];
 extern INT32           FIFO_StepAddInc[NUMBER_OF_STEPPERS][COMMAND_FIFO_LENGTH];
 extern UINT32          FIFO_StepsCounter[NUMBER_OF_STEPPERS][COMMAND_FIFO_LENGTH];
