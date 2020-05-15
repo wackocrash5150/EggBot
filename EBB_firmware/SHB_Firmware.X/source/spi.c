@@ -1,6 +1,7 @@
 #include <p18cxxx.h>
 #include <ctype.h>
 #include <GenericTypeDefs.h>
+#include <stdio.h>
 #include "spi.h"
 #include "ubw.h"
 
@@ -62,9 +63,13 @@ void spi_init(void)
   SSP2CON1bits.CKP = 1;         // Clock idles high
   SSP2CON1bits.SSPEN = 1;       // Turn MSSP2 (SPI2) peripheral on
 
+  /// TODO: Load in boot-up initialization values from table in loop to save space
+  
   spi_send_receive(&temp, 0x00 + 0x01, 0x00000000);   // Read GStat
   spi_send_receive(&temp, 0x00 + 0x01, 0x00000000);   // Read GStat
   spi_send_receive(&temp, 0x00 + 0x01, 0x00000000);   // Read GStat
+  
+  
   
 //  spi_send(0x80 + 0x00, 0x00000008);   // GCONF=8: Enable PP and INT outputs
 //  spi_send(0x80 + 0x6C, 0x000100C5);   // CHOPCONF: TOFF=5, HSRTR=4, HEND=1, TBL=2, CHM=0 (spreadCycle)
@@ -112,8 +117,13 @@ void spi_init(void)
 //  spi_send(0x80 + 0x4D, 0xFFFF3800);   // XTARGET = -51200 (move one rotation left (200*256 microsteps))
 }
 
+// This is the main SPI send/receive function to get data to and from the
+// Trinamic driver chip.
+// It is implemented as blocking because it provides a faster overall send than
+// if an interrupt were to be generated for each byte.
+
 /// TODO: Add timeout?
-UINT32 spi_send_receive(UINT8 * recieved_command, UINT8 send_command, UINT32 sendData)
+UINT32 spi_send_receive(UINT8 * recieved_command, UINT8 send_command, UINT32 send_data)
 {
   volatile UINT8 temp;
   UINT8 sd1, sd2, sd3, sd4;
@@ -121,13 +131,14 @@ UINT32 spi_send_receive(UINT8 * recieved_command, UINT8 send_command, UINT32 sen
   UINT8 dummy;
   
   /// TODO! Find out why this is necessary. What other code is overwriting this between
-  /// booup and first TS command?
+  /// bootup and first TS command?
   RPOR0 = 10;                   // Set SCK2 to use RP0 pin
 
-  sd1 = (sendData >> 24) & 0xFF;
-  sd2 = (sendData >> 16) & 0xFF;
-  sd3 = (sendData >> 8) & 0xFF;
-  sd4 = sendData & 0xFF;
+  /// TODO: Can this be faster somehow?
+  sd1 = (send_data >> 24) & 0xFF;
+  sd2 = (send_data >> 16) & 0xFF;
+  sd3 = (send_data >> 8) & 0xFF;
+  sd4 = send_data & 0xFF;
 
 #if defined(EBB_2_3)
   LATDbits.LATD1 = 0;           // Chip select goes low
@@ -172,6 +183,16 @@ UINT32 spi_send_receive(UINT8 * recieved_command, UINT8 send_command, UINT32 sen
 #else  
   LATAbits.LATA2 = 1;           // Chip select goes high
 #endif
+
+  // Print out what just happened so we have a record of it on the PC
+  /// (Just for debug)
+  printf((far rom char *)"Tx:%02X,%08lX Rx:%02X,%08lX\r\n",
+    send_command,
+    send_data,
+    *recieved_command,
+    result
+  );
+
   return(result);
 }
 
@@ -203,9 +224,4 @@ void parse_TS_packet (void)
   send_cmd = temp;
   
   rec_data = spi_send_receive(&rec_cmd, send_cmd, send_data);
-
-  printf((far rom char *)"%02X,%08lX\r\n", 
-    rec_cmd,
-    rec_data
-  );
 }

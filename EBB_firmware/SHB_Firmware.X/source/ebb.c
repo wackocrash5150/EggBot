@@ -327,6 +327,19 @@ void high_ISR(void)
     USBDeviceTasks();
   #endif
 
+  // INT1 Trinamic INT pin went high, indicating that the a move is done
+  if (INTCON3bits.INT1IF)
+  {
+    // Clear the interrupt
+    INTCON3bits.INT1IF = 0;
+    
+    // Read out state of 
+    
+    // For now, just toggle our debug I/O pin
+    LATDbits.LATD1 = 1;
+    LATDbits.LATD1 = 0;
+  }
+    
   // 25KHz ISR fire
   if (PIR1bits.TMR1IF)
   {
@@ -609,6 +622,16 @@ void EBB_Init(void)
   // Clear out global stepper positions
   parse_CS_packet();
   
+  // For Trinamic driver chip, set up INT line as input on RA1, and 
+  // then route RP1 (same pin) to INT1. Then turn on INT1.
+  TRISAbits.TRISA1 = 1;         // RA1 is input
+  LATAbits.LATA1 = 0;           // RA1 latch is zero (probably not necessary)
+  RPINR1 = 1;                   // INT1 is mapped to RP1
+  INTCON2bits.INTEDG1 = 1;      // INT1 interrupts on rising edge
+  INTCON3bits.INT1IP = 1;       // INT1 set to use high priority interrupt
+  INTCON3bits.INT1IF = 0;       // Clear INT1 interrupt flag
+  INTCON3bits.INT1IE = 1;       // Enable INT1
+  
   /// DEBUG ONLY CODE ///
   /// REMOVE FOR PRODUCTION ///
   TRISAbits.TRISA5 = 0;
@@ -618,11 +641,13 @@ void EBB_Init(void)
   LATAbits.LATA5 = 1;
   LATEbits.LATE1 = 1;
   LATAbits.LATA7 = 1;
-  LATCbits.LATC0 = 1;
+  LATCbits.LATC0 = 1; 
   LATAbits.LATA5 = 0;
   LATEbits.LATE1 = 0;
   LATAbits.LATA7 = 0;
   LATCbits.LATC0 = 0;
+  TRISDbits.TRISD1 = 0;
+  LATDbits.LATD1 = 0;
   
 }
 
