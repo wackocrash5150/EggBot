@@ -51,6 +51,9 @@
 #ifndef EBB_H
 #define EBB_H
 
+// Define this to turn on some GPIO pin timing debug for stepper commands
+#define GPIO_DEBUG
+
 // 	These are used for Enable<X>IO to control the enable lines for the driver
 #define ENABLE_MOTOR        0
 #define DISABLE_MOTOR       1

@@ -332,6 +332,11 @@ void clear_StepCounters(void);
 #pragma interrupt high_ISR
 void high_ISR(void)
 {
+#if defined(GPIO_DEBUG)
+  TRISDbits.TRISD1 = 0;
+  LATDbits.LATD1 = 1;
+#endif
+
 	//Check which interrupt flag caused the interrupt.
 	//Service the interrupt
 	//Clear the interrupt flag
@@ -619,7 +624,11 @@ void high_ISR(void)
 			CurrentCommand.Command = COMMAND_NONE;
 			if (!FIFOEmpty)
 			{
-                CurrentCommand = CommandFIFO[0];
+#if defined(GPIO_DEBUG)
+        TRISDbits.TRISD0 = 0;
+        LATDbits.LATD0 = 1;
+#endif
+        CurrentCommand = CommandFIFO[0];
                 // Zero out command in FIFO
                 CommandFIFO[0].Command = COMMAND_NONE;
                 CommandFIFO[0].StepAdd[0] = 0;
@@ -638,6 +647,10 @@ void high_ISR(void)
 			}
             else {
                 CurrentCommand.DelayCounter = 0;
+#if defined(GPIO_DEBUG)
+  TRISAbits.TRISA1 = 0;
+  LATAbits.LATA1 = 1;
+#endif
             }
 		}
 		
@@ -655,6 +668,11 @@ void high_ISR(void)
 			ButtonPushed = TRUE;
 		}
 	}
+#if defined(GPIO_DEBUG)
+  LATAbits.LATA1 = 0;
+  LATDbits.LATD0 = 0;
+  LATDbits.LATD1 = 0;
+#endif
 }
 
 // Init code
