@@ -23,14 +23,15 @@ Global vData()         As String
 Global nItems          As Long
 Global Counter         As Long
 Global Position        As Long
-Global ComputerName    As String   Value OS_GetComputerName
+' Global ComputerName    As String   Value OS_GetComputerName
 Global Ports()         As String
 Global CountATI        As Long
 Global sHexFilename    As String
 Global sFirmwareNumber As String
 Global bConsole        As Boolean
-Global bUpdaterConsole As Boolean   
+Global bUpdaterConsole As Boolean
 Global sCommandLine    As String
+
                                   
 ' Replace the filename in the next two lines to change which HEX file gets programmed
 #BUNDLE File "HEX", ".\EBF_v270.hex", "", ReplaceExisting=1
@@ -128,20 +129,26 @@ End Function
 '------------------------------------------------------------------------------
 ' Callback procedure for button control
 '------------------------------------------------------------------------------
-CallBack Function cbButton() As Long                               
+CallBack Function cbButton() As Long
   Local sComPort As String
   Local sTemp As String
   Local dFloat As Double
+  dword bufferSize = 1024
+  dim buffer as asciiz * bufferSize
+
+  DECLARE FUNCTION GetComputerName IMPORT "KERNEL32.DLL" ALIAS "GetComputerNameW" (BYREF lpBuffer AS ASCIIZ, BYREF nSize AS DWORD) AS LONG
 
   If CBMSG = %WM_COMMAND Then
 
     Select Case CBCTLMSG
       Case %BN_CLICKED
-        Select Case CBCTL  
+        Select Case CBCTL
 
-          Case %ID_StartUpdateButton    
+          Case %ID_StartUpdateButton
+            GetComputerName(buffer, bufferSize)
+            
             Control Append Text CBHNDL, %ID_CommandOutputTexBox, "Building a list of COM ports ..." + Chr$(13) + Chr$(10)
-            sBuffer = WMI_GetData(ComputerName, "", "", "", "Win32_PnPEntity", "", "Name" )
+            sBuffer = WMI_GetData(buffer, "", "", "", "Win32_PnPEntity", "", "Name" )
               
             nItems = Parse( sBuffer, vData(), $CRLF)
             
