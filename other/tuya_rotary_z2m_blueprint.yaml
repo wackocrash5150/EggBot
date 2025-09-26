@@ -1,0 +1,227 @@
+blueprint:
+  name: Tuya Zigbee Rotary Dial (Z2M) → Light Dimmer
+  description: >
+    Map a Tuya Zigbee rotary dial (via Zigbee2MQTT) to control a light:
+    - Single press: toggle (configurable)
+    - Double press: max brightness (configurable)
+    - Hold: min brightness / off (configurable)
+    - Rotate right/left: brightness up/down with step (%) or device-reported step size
+    Supports both JSON payloads on zigbee2mqtt/<device> and plain text on zigbee2mqtt/<device>/action.
+  domain: automation
+  source_url: https://example.invalid/tuya-rotary-z2m-blueprint
+
+  input:
+    z2m_topic:
+      name: Zigbee2MQTT device topic
+      description: Enter the exact device topic, e.g. zigbee2mqtt/tuya_dial (no trailing /action).
+      selector:
+        text:
+          multiline: false
+    light_target:
+      name: Light to control
+      selector:
+        target:
+          entity:
+            domain: light
+    step_pct:
+      name: Brightness step per tick (%)
+      description: Used when the device doesn't provide action_step_size.
+      default: 7
+      selector:
+        number:
+          min: 1
+          max: 50
+          unit_of_measurement: "%"
+          mode: slider
+    use_device_step:
+      name: Use device-reported step size when available
+      description: If your dial sends "action_step_size", use it (scaled to %).
+      default: true
+      selector:
+        boolean: {}
+    onpress_action:
+      name: Single press action
+      default: toggle
+      selector:
+        select:
+          options:
+            - label: Toggle
+              value: toggle
+            - label: Turn ON
+              value: on
+            - label: Turn OFF
+              value: off
+    doublepress_action:
+      name: Double press action
+      description: Choose what happens on a double press (optional).
+      default: full_brightness
+      selector:
+        select:
+          options:
+            - label: Full brightness
+              value: full_brightness
+            - label: Toggle
+              value: toggle
+            - label: Do nothing
+              value: none
+    hold_action:
+      name: Hold action
+      description: Choose what happens on a long press/hold (optional).
+      default: min_brightness
+      selector:
+        select:
+          options:
+            - label: Min brightness (5%)
+              value: min_brightness
+            - label: Turn OFF
+              value: off
+            - label: Do nothing
+              value: none
+
+mode: restart
+max_exceeded: silent
+
+variables:
+  z2m_topic: !input z2m_topic
+  step_pct_default: !input step_pct
+  use_device_step: !input use_device_step
+  onpress_action: !input onpress_action
+  doublepress_action: !input doublepress_action
+  hold_action: !input hold_action
+
+trigger:
+  # Listen to all Zigbee2MQTT messages; we’ll filter by topic in the action.
+  - platform: mqtt
+    topic: zigbee2mqtt/#
+
+condition: []
+
+action:
+  - variables:
+      # Accept only messages from the specified device topic or its /action subtopic.
+      is_from_device: >-
+        {{ trigger.topic == z2m_topic or trigger.topic == (z2m_topic ~ '/action') }}
+
+      # Determine action string from either JSON {"action": "..."} or plain text payload.
+      action: >-
+        {% if trigger.payload_json is defined and trigger.payload_json.action is defined %}
+          {{ trigger.payload_json.action | lower }}
+        {% else %}
+          {{ (trigger.payload | string) | lower }}
+        {% endif %}
+
+      # Optional device step (0–254 typical). Fall back to user step if absent.
+      device_step_raw: >-
+        {% if trigger.payload_json is defined and trigger.payload_json.action_step_size is defined %}
+          {{ trigger.payload_json.action_step_size }}
+        {% else %} 0 {% endif %}
+
+      # Convert device step to a sane percentage (1–50% clamp).
+      device_step_pct: >-
+        {% set pct = ((device_step_raw | float(0)) / 254.0 * 100.0) | round(0) %}
+        {% set pct = [ [pct, 50] | min, 1 ] | max %}
+        {{ pct | int }}
+
+      # Final step to use.
+      step_to_use_pct: >-
+        {% if use_device_step and (device_step_raw | int(0)) > 0 %}
+          {{ device_step_pct }}
+        {% else %}
+          {{ step_pct_default }}
+        {% endif %}
+
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ is_from_device }}"
+        sequence:
+          - choose:
+              # ----- SINGLE PRESS -----
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {{ action in ['single','single_press','press','short_press'] }}
+                sequence:
+                  - choose:
+                      - conditions: "{{ onpress_action == 'toggle' }}"
+                        sequence:
+                          - service: light.toggle
+                            target: !input light_target
+                      - conditions: "{{ onpress_action == 'on' }}"
+                        sequence:
+                          - service: light.turn_on
+                            target: !input light_target
+                      - conditions: "{{ onpress_action == 'off' }}"
+                        sequence:
+                          - service: light.turn_off
+                            target: !input light_target
+
+              # ----- DOUBLE PRESS -----
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {{ action in ['double','double_press','double_click'] }}
+                sequence:
+                  - choose:
+                      - conditions: "{{ doublepress_action == 'full_brightness' }}"
+                        sequence:
+                          - service: light.turn_on
+                            target: !input light_target
+                            data:
+                              brightness_pct: 100
+                      - conditions: "{{ doublepress_action == 'toggle' }}"
+                        sequence:
+                          - service: light.toggle
+                            target: !input light_target
+                      - conditions: "{{ doublepress_action == 'none' }}"
+                        sequence: []
+
+              # ----- HOLD / LONG PRESS -----
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {{ action in ['hold','long','long_press','hold_start'] }}
+                sequence:
+                  - choose:
+                      - conditions: "{{ hold_action == 'min_brightness' }}"
+                        sequence:
+                          - service: light.turn_on
+                            target: !input light_target
+                            data:
+                              brightness_pct: 5
+                      - conditions: "{{ hold_action == 'off' }}"
+                        sequence:
+                          - service: light.turn_off
+                            target: !input light_target
+                      - conditions: "{{ hold_action == 'none' }}"
+                        sequence: []
+
+              # ----- ROTATE RIGHT (BRIGHTNESS UP) -----
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {{ action in ['rotate_right','rotate_right_step','brighten','brightness_move_up','step_right','cw'] }}
+                sequence:
+                  - service: light.turn_on
+                    target: !input light_target
+                    data:
+                      brightness_step_pct: "{{ step_to_use_pct | int }}"
+
+              # ----- ROTATE LEFT (BRIGHTNESS DOWN) -----
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {{ action in ['rotate_left','rotate_left_step','dim','brightness_move_down','step_left','ccw'] }}
+                sequence:
+                  - service: light.turn_on
+                    target: !input light_target
+                    data:
+                      brightness_step_pct: "{{ 0 - (step_to_use_pct | int) }}"
+
+              # ----- STOP/RELEASE EVENTS (ignored) -----
+              - conditions:
+                  - condition: template
+                    value_template: >
+                      {{ action in ['brightness_stop','hold_end','release'] }}
+                sequence: []
+    default: []
